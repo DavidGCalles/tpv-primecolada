@@ -1,0 +1,9 @@
+Flask
+Flask-Cors
+google-cloud-firestore
+requests
+Flask-Swagger-UI
+marshmallow
+python-dotenv
+Flask-JWT-Extended
+gunicorn

@@ -1,0 +1,34 @@
+version: '3.8'
+services:
+  backend:
+    build: ./primecolada-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./primecolada-backend:/app
+    environment:
+      - FLASK_ENV=development
+  websockets:
+    build: ./primecolada-websockets
+    ports:
+      - "3001:8080"
+    volumes:
+      - ./primecolada-websockets:/usr/src/app
+      - /usr/src/app/node_modules
+  frontend:
+    build: ./primecolada-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+      - websockets
+  populate-db:
+    build: ./primecolada-backend
+    command: python populate_db.py
+    depends_on:
+      - backend
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_RUN_HOST=0.0.0.0
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/tpv-primecolada-23f4483ee2f0.json
+      - NUM_VENTAS=50
