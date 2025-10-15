@@ -1,4 +1,5 @@
 import requests
+import os
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 from google.cloud import firestore
@@ -291,7 +292,6 @@ def delete_venta(venta_id):
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/imprimiendo', methods=['GET'])
-@jwt_required()
 def get_imprimiendo_ventas():
     """
     Get all ventas from Firestore with the state 'IMPRIMIENDO'.
@@ -333,8 +333,9 @@ def broadcast_imprimiendo_update():
         results = convert_timestamps(results)
         
         # Send request to WebSocket service
+        websocket_url = os.environ.get('WEBSOCKET_URL', 'http://websockets:3001')
         try:
-            requests.post('http://websockets:8080/broadcast', json={"message": results})
+            requests.post(f'{websocket_url}/broadcast', json={"message": results})
         except requests.exceptions.RequestException as e:
             print(f"Error sending broadcast request: {e}")
 

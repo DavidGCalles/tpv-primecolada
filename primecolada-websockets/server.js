@@ -63,6 +63,6 @@ app.post('/broadcast', (req, res) => {
   res.status(200).send('Message broadcasted');
 });
 
-server.listen(8080, () => {
-  console.log('WebSocket server listening on port 8080');
+server.listen(3001, () => {
+  console.log('WebSocket server listening on port 3001');
 });

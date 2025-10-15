@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const SOCKET_URL = `ws://${window.location.hostname}:3001`;
+const API_BASE_URL = '/api';
+const SOCKET_URL = `ws://${window.location.host}/ws`;
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

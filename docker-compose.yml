@@ -8,10 +8,11 @@ services:
       - ./primecolada-backend:/app
     environment:
       - FLASK_ENV=development
+      - WEBSOCKET_URL=http://websockets:3001
   websockets:
     build: ./primecolada-websockets
     ports:
-      - "3001:8080"
+      - "3001:3001"
     volumes:
       - ./primecolada-websockets:/usr/src/app
       - /usr/src/app/node_modules
@@ -22,13 +23,9 @@ services:
     depends_on:
       - backend
       - websockets
-  populate-db:
-    build: ./primecolada-backend
-    command: python populate_db.py
-    depends_on:
-      - backend
     environment:
-      - FLASK_APP=app.py
-      - FLASK_RUN_HOST=0.0.0.0
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/tpv-primecolada-23f4483ee2f0.json
-      - NUM_VENTAS=50
+      - PORT=80
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=5000
+      - WEBSOCKET_HOST=websockets
+      - WEBSOCKET_PORT=3001
