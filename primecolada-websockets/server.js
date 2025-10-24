@@ -9,7 +9,11 @@ app.use(express.json());
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-const BACKEND_API_URL = 'http://backend:5000/ventas/imprimiendo';
+// Construir la URL del backend a partir de variables de entorno
+// Default a 'backend:5000' para compatibilidad con docker-compose local
+const BACKEND_HOST = process.env.BACKEND_HOST || 'backend';
+const BACKEND_PORT = process.env.BACKEND_PORT || 5000;
+const BACKEND_API_URL = `http://${BACKEND_HOST}:${BACKEND_PORT}/ventas/imprimiendo`;
 
 wss.on('connection', async ws => {
   console.log('Client connected');

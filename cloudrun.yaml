@@ -18,6 +18,11 @@ spec:
           name: websockets
           ports:
             - containerPort: 3000
+          env:
+            - name: BACKEND_HOST
+              value: "localhost"
+            - name: BACKEND_PORT
+              value: "5000"
       timeoutSeconds: 300
       containerConcurrency: 80
       serviceAccountName: default

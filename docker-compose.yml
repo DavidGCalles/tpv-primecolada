@@ -16,6 +16,9 @@ services:
     volumes:
       - ./primecolada-websockets:/usr/src/app
       - /usr/src/app/node_modules
+    environment:
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=5000
   frontend:
     build: ./primecolada-frontend
     ports:
