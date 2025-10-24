@@ -1,0 +1,23 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: tpv-primecolada
+spec:
+  template:
+    spec:
+      containers:
+        - image: gcr.io/$PROJECT_ID/primecolada-backend
+          name: backend
+          ports:
+            - containerPort: 5000
+        - image: gcr.io/$PROJECT_ID/primecolada-frontend
+          name: frontend
+          ports:
+            - containerPort: 80
+        - image: gcr.io/$PROJECT_ID/primecolada-websockets
+          name: websockets
+          ports:
+            - containerPort: 3000
+      timeoutSeconds: 300
+      containerConcurrency: 80
+      serviceAccountName: default
