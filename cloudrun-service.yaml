@@ -4,6 +4,11 @@ metadata:
   name: tpv-primecolada
 spec:
   template:
+    metadata:
+      annotations:
+        run.googleapis.com/ingress: all
+        run.googleapis.com/launch-stage: GA
+        run.googleapis.com/allow-unauthenticated: "true"
     spec:
       containers:
         - name: frontend
@@ -19,7 +24,6 @@ spec:
               value: "3001"
           ports:
             - containerPort: 80
-          # Este contenedor recibe el tráfico público
           startupProbe:
             httpGet:
               path: /
