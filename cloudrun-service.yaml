@@ -39,8 +39,6 @@ spec:
               value: localhost
             - name: BACKEND_PORT
               value: "5000"
-          ports:
-            - containerPort: 5000
         - name: websockets
           image: gcr.io/$PROJECT_ID/primecolada-websockets:latest
           env:
@@ -48,8 +46,6 @@ spec:
               value: localhost
             - name: BACKEND_PORT
               value: "5000"
-          ports:
-            - containerPort: 3001
       serviceAccountName: 15318690559-compute@developer.gserviceaccount.com
   traffic:
     - latestRevision: true
