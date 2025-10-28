@@ -2,11 +2,12 @@ apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: tpv-primecolada
+  annotations:
+    run.googleapis.com/ingress: all
 spec:
   template:
     metadata:
       annotations:
-        run.googleapis.com/ingress: all
         run.googleapis.com/launch-stage: GA
         run.googleapis.com/allow-unauthenticated: "true"
     spec:
