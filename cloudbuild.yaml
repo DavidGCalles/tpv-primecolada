@@ -16,7 +16,7 @@ steps:
       - 'run'
       - 'services'
       - 'replace'
-      - 'cloudrun.yaml'
+  - 'cloudrun-service.yaml'
       - '--region'
       - 'us-central1'
       - '--project'

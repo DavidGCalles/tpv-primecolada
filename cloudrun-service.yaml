@@ -1,0 +1,56 @@
+apiVersion: run.googleapis.com/v1
+kind: Service
+metadata:
+  name: tpv-primecolada
+spec:
+  template:
+    spec:
+      containers:
+        - name: frontend
+          image: gcr.io/$PROJECT_ID/primecolada-frontend:latest
+          env:
+            - name: BACKEND_HOST
+              value: localhost
+            - name: BACKEND_PORT
+              value: "5000"
+            - name: WEBSOCKET_HOST
+              value: localhost
+            - name: WEBSOCKET_PORT
+              value: "3001"
+            - name: PORT
+              value: "80"
+          ports:
+            - containerPort: 80
+          # Este contenedor recibe el tráfico público
+          startupProbe:
+            httpGet:
+              path: /
+              port: 80
+        - name: backend
+          image: gcr.io/$PROJECT_ID/primecolada-backend:latest
+          env:
+            - name: FLASK_ENV
+              value: production
+            - name: WEBSOCKET_URL
+              value: http://localhost:3001
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /secrets/tpv-primecolada-23f4483ee2f0.json
+            - name: BACKEND_HOST
+              value: localhost
+            - name: BACKEND_PORT
+              value: "5000"
+          ports:
+            - containerPort: 5000
+        - name: websockets
+          image: gcr.io/$PROJECT_ID/primecolada-websockets:latest
+          env:
+            - name: BACKEND_HOST
+              value: localhost
+            - name: BACKEND_PORT
+              value: "5000"
+          ports:
+            - containerPort: 3001
+      serviceAccountName: tpv-primecolada-sa@${PROJECT_ID}.iam.gserviceaccount.com
+  traffic:
+    - latestRevision: true
+      percent: 100
