@@ -50,7 +50,7 @@ spec:
               value: "5000"
           ports:
             - containerPort: 3001
-      serviceAccountName: tpv-primecolada-sa@${PROJECT_ID}.iam.gserviceaccount.com
+      serviceAccountName: 15318690559-compute@developer.gserviceaccount.com
   traffic:
     - latestRevision: true
       percent: 100
