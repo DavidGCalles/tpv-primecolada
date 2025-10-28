@@ -15,12 +15,12 @@ steps:
     args:
       - 'run'
       - 'services'
-      - 'replace'
-      - 'cloudrun-service.yaml'
+      - 'add-iam-policy-binding'
+      - 'tpv-primecolada'
       - '--region'
       - 'europe-southwest1'
-      - '--project'
-      - '$PROJECT_ID'
+      - '--member=allUsers'
+      - '--role=roles/run.invoker'
 images:
   - 'gcr.io/$PROJECT_ID/primecolada-backend'
   - 'gcr.io/$PROJECT_ID/primecolada-frontend'
