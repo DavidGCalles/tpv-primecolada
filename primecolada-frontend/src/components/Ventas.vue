@@ -5,9 +5,6 @@
         <div class="col-md-8">
           <StatusSummary :status-counts="statusCounts" @filter="filterByStatus" />
         </div>
-        <div class="col-md-4">
-          <ImprimiendoWidget @generate-qr="generateQrCode" />
-        </div>
       </div>
       
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -46,7 +43,7 @@ import VentaModal from './VentaModal.vue';
 import VentaDetailModal from './VentaDetailModal.vue';
 import StatusSummary from './StatusSummary.vue';
 import VentaCard from './VentaCard.vue';
-import ImprimiendoWidget from './ImprimiendoWidget.vue';
+// import ImprimiendoWidget from './ImprimiendoWidget.vue';
 import { getVentaStateName, VentaState } from '../stateHelper';
 
 const allVentas = ref([]);
