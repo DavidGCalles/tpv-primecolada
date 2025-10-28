@@ -61,3 +61,24 @@ This will build and run both the frontend and backend services.
     -   vue
     -   vue-router
 -   **Dockerfile**: `primecolada-frontend/Dockerfile`
+
+# Cambios recientes
+
+## Despliegue Multi-Contenedor Cloud Run
+- Se añadió el archivo `cloudrun-service.yaml` que define los tres contenedores (frontend, backend, websockets) y sus variables de entorno usando `localhost` para comunicación interna.
+- El contenedor frontend se marca como principal (ingress), los otros como sidecars.
+- Se especifica la cuenta de servicio para autenticación con Firestore.
+
+## Cloud Build
+- Se actualizó `cloudbuild.yaml` para desplegar usando el manifiesto `cloudrun-service.yaml`.
+- El proceso ahora construye, sube y despliega los tres contenedores automáticamente.
+
+## Websockets
+- El servicio websockets ahora lee la URL del backend desde las variables de entorno `BACKEND_HOST` y `BACKEND_PORT`.
+- Ejemplo de configuración en `docker-compose.yml` y en el manifiesto de Cloud Run.
+
+## CI/CD
+- Se recomienda crear un Trigger en Cloud Build para automatizar el despliegue al hacer push en la rama principal.
+
+## IAM
+- Es necesario asignar el rol "Cloud Datastore User" a la cuenta de servicio especificada en el manifiesto para acceso a Firestore.

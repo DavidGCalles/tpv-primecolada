@@ -64,3 +64,9 @@ The production-ready files will be located in the `dist` directory.
 ## Docker
 
 The frontend can also be run in a Docker container. The `Dockerfile` and `nginx.conf` are provided for this purpose. When using `docker-compose` from the root directory, the frontend will be served at `http://localhost:8080`.
+
+# Cambios recientes
+
+- El frontend ahora puede ser desplegado como parte de un servicio multi-contenedor en Cloud Run.
+- Variables de entorno para comunicación interna entre contenedores (ejemplo: `BACKEND_HOST=localhost`).
+- Se añadió el manifiesto `cloudrun-service.yaml` y se actualizó el proceso de Cloud Build.

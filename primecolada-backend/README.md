@@ -66,3 +66,10 @@ The application will be available at `http://localhost:5000`.
 ## Docker
 
 The backend can also be run in a Docker container. The `Dockerfile` is provided for this purpose. When using `docker-compose` from the root directory, the backend will be available at `http://localhost:5000`.
+
+# Cambios recientes
+
+- El backend ahora puede ser desplegado como parte de un servicio multi-contenedor en Cloud Run.
+- Variables de entorno para comunicación interna entre contenedores (ejemplo: `BACKEND_HOST=localhost`).
+- Se añadió el manifiesto `cloudrun-service.yaml` y se actualizó el proceso de Cloud Build.
+- Es necesario asignar el rol "Cloud Datastore User" a la cuenta de servicio para acceso a Firestore.
