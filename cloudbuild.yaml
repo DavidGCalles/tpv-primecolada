@@ -25,3 +25,6 @@ images:
   - 'gcr.io/$PROJECT_ID/primecolada-backend'
   - 'gcr.io/$PROJECT_ID/primecolada-frontend'
   - 'gcr.io/$PROJECT_ID/primecolada-websockets'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
