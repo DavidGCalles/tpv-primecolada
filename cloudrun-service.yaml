@@ -7,7 +7,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: gcr.io/$PROJECT_ID/primecolada-frontend:latest
+          image: gcr.io/tpv-primecolada/primecolada-frontend:latest
           env:
             - name: BACKEND_HOST
               value: localhost
@@ -25,7 +25,7 @@ spec:
               path: /
               port: 80
         - name: backend
-          image: gcr.io/$PROJECT_ID/primecolada-backend:latest
+          image: gcr.io/tpv-primecolada/primecolada-backend:latest
           env:
             - name: FLASK_ENV
               value: production
@@ -38,7 +38,7 @@ spec:
             - name: BACKEND_PORT
               value: "5000"
         - name: websockets
-          image: gcr.io/$PROJECT_ID/primecolada-websockets:latest
+          image: gcr.io/tpv-primecolada/primecolada-websockets:latest
           env:
             - name: BACKEND_HOST
               value: localhost
