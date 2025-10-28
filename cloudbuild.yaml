@@ -18,7 +18,7 @@ steps:
       - 'replace'
       - 'cloudrun-service.yaml'
       - '--region'
-      - 'us-central1'
+      - 'europe-southwest1'
       - '--project'
       - '$PROJECT_ID'
 images:
