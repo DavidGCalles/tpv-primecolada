@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 const API_BASE_URL = '/api';
-const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-const SOCKET_URL = `${wsProtocol}://${window.location.host}/ws`;
+// WebSocket desactivado en producción
+// const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+// const SOCKET_URL = `${wsProtocol}://${window.location.host}/ws`;
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -29,4 +30,4 @@ export const ventasApi = {
   countByStatus: () => apiClient.get('/ventas/count'),
 };
 
-export const socket = new WebSocket(SOCKET_URL);
+// export const socket = new WebSocket(SOCKET_URL);

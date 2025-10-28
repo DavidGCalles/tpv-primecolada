@@ -42,13 +42,13 @@ spec:
               value: localhost
             - name: BACKEND_PORT
               value: "5000"
-        - name: websockets
-          image: gcr.io/tpv-primecolada/primecolada-websockets:latest
-          env:
-            - name: BACKEND_HOST
-              value: localhost
-            - name: BACKEND_PORT
-              value: "5000"
+        # - name: websockets
+        #   image: gcr.io/tpv-primecolada/primecolada-websockets:latest
+        #   env:
+        #     - name: BACKEND_HOST
+        #       value: localhost
+        #     - name: BACKEND_PORT
+        #       value: "5000"
       serviceAccountName: 15318690559-compute@developer.gserviceaccount.com
   traffic:
     - latestRevision: true
