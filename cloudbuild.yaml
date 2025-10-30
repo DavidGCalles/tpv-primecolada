@@ -23,8 +23,6 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
-      - '--update-env-vars'
-      - 'BACKEND_HOST=localhost,BACKEND_PORT=5000'
       - '--container'
       - 'backend'
       - '--image'
@@ -33,6 +31,8 @@ steps:
       - 'websockets'
       - '--image'
       - 'gcr.io/$PROJECT_ID/primecolada-websockets'
+      - '--update-env-vars'
+      - 'BACKEND_HOST=localhost,BACKEND_PORT=5000'
 
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
