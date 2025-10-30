@@ -1,10 +1,10 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/primecolada-backend', './primecolada-backend']
+    args: ['build', '--no-cache', '-t', 'gcr.io/$PROJECT_ID/primecolada-backend', './primecolada-backend']
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/primecolada-frontend', './primecolada-frontend']
+    args: ['build', '--no-cache', '-t', 'gcr.io/$PROJECT_ID/primecolada-frontend', './primecolada-frontend']
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/primecolada-websockets', './primecolada-websockets']
+    args: ['build', '--no-cache', '-t', 'gcr.io/$PROJECT_ID/primecolada-websockets', './primecolada-websockets']
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/primecolada-backend']
   - name: 'gcr.io/cloud-builders/docker'
