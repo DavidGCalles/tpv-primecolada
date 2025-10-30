@@ -20,6 +20,8 @@ steps:
       - 'tpv-primecolada'
       - '--image'
       - 'gcr.io/$PROJECT_ID/primecolada-frontend'
+      - '--update-env-vars'
+      - 'BACKEND_HOST=localhost,BACKEND_PORT=8080'
       - '--image'
       - 'gcr.io/$PROJECT_ID/primecolada-backend'
       - '--region'
