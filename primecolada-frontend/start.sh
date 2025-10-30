@@ -1,7 +1,6 @@
 #!/bin/sh
 
 # Set default values for environment variables if they are not already set
-export PORT=${PORT:-80}
 export BACKEND_HOST=${BACKEND_HOST:-backend}
 export BACKEND_PORT=${BACKEND_PORT:-5000}
 export WEBSOCKET_HOST=${WEBSOCKET_HOST:-websockets}
