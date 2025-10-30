@@ -1,16 +1,8 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '--no-cache', '-t', 'gcr.io/$PROJECT_ID/primecolada-backend', './primecolada-backend']
-  - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '--no-cache', '-t', 'gcr.io/$PROJECT_ID/primecolada-frontend', './primecolada-frontend']
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '--no-cache', '-t', 'gcr.io/$PROJECT_ID/primecolada-websockets', './primecolada-websockets']
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/primecolada-backend']
-  - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/primecolada-frontend']
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/primecolada-websockets']
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
@@ -23,17 +15,6 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
-      - '--container'
-      - 'backend'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/primecolada-backend'
-      - '--container'
-      - 'websockets'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/primecolada-websockets'
-      - '--update-env-vars'
-      - 'BACKEND_HOST=localhost,BACKEND_PORT=5000'
-
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
@@ -45,9 +26,7 @@ steps:
       - '--member=allUsers'
       - '--role=roles/run.invoker'
 images:
-  - 'gcr.io/$PROJECT_ID/primecolada-backend'
   - 'gcr.io/$PROJECT_ID/primecolada-frontend'
-  - 'gcr.io/$PROJECT_ID/primecolada-websockets'
 
 options:
   logging: CLOUD_LOGGING_ONLY
