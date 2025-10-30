@@ -29,12 +29,11 @@ steps:
       - 'backend'
       - '--image'
       - 'gcr.io/$PROJECT_ID/primecolada-backend'
-      - '--no-ports'
       - '--container'
       - 'websockets'
       - '--image'
       - 'gcr.io/$PROJECT_ID/primecolada-websockets'
-      - '--no-ports'
+
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
