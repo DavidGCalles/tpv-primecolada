@@ -25,4 +25,3 @@ spec:
               value: "5000"
       timeoutSeconds: 300
       containerConcurrency: 80
-      serviceAccountName: default
