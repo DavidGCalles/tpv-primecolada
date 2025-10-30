@@ -19,10 +19,6 @@ spec:
               value: localhost
             - name: BACKEND_PORT
               value: "5000"
-            - name: WEBSOCKET_HOST
-              value: localhost
-            - name: WEBSOCKET_PORT
-              value: "3001"
           ports:
             - containerPort: 80
           startupProbe:
@@ -34,10 +30,6 @@ spec:
           env:
             - name: FLASK_ENV
               value: production
-            - name: WEBSOCKET_URL
-              value: http://localhost:3001
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: /secrets/tpv-primecolada-23f4483ee2f0.json
             - name: BACKEND_HOST
               value: localhost
             - name: BACKEND_PORT
