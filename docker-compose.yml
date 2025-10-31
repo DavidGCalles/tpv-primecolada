@@ -8,27 +8,11 @@ services:
       - ./primecolada-backend:/app
     environment:
       - FLASK_ENV=development
-      - WEBSOCKET_URL=http://websockets:3001
-  websockets:
-    build: ./primecolada-websockets
-    ports:
-      - "3001:3001"
-    volumes:
-      - ./primecolada-websockets:/usr/src/app
-      - /usr/src/app/node_modules
-    environment:
-      - BACKEND_HOST=backend
-      - BACKEND_PORT=5000
   frontend:
-    build: ./primecolada-frontend
+    build: 
+      context: ./primecolada-frontend
+      dockerfile: Dockerfile
     ports:
       - "8080:80"
     depends_on:
       - backend
-      - websockets
-    environment:
-      - PORT=80
-      - BACKEND_HOST=backend
-      - BACKEND_PORT=5000
-      - WEBSOCKET_HOST=websockets
-      - WEBSOCKET_PORT=3001
