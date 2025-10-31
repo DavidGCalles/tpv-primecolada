@@ -27,7 +27,7 @@ steps:
   - '--platform'
   - 'managed'
   - '--set-env-vars'
-  - 'BACKEND_URL=primecolada-backend-15318690559.europe-west1.run.app'
+  - 'BACKEND_URL=https://primecolada-backend-15318690559.europe-west1.run.app'
   - '--allow-unauthenticated'
 
 # Deploy backend service
