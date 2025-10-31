@@ -1,3 +1,4 @@
+import os
 from flask import Flask, jsonify
 from flask_swagger_ui import get_swaggerui_blueprint
 from flask_cors import CORS
@@ -37,4 +38,5 @@ def swagger_spec_json():
     return jsonify(get_swagger_spec())
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)
