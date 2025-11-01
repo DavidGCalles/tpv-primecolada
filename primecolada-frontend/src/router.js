@@ -34,6 +34,14 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
+  if (to.name === 'Login' && userState.user) {
+    if (userState.isAdmin) {
+      return next({ name: 'Ventas' });
+    } else {
+      return next({ name: 'UserView' });
+    }
+  }
+
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!userState.user) {
       next({ name: 'Login' });
