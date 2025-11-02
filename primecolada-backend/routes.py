@@ -97,21 +97,31 @@ def create_venta():
 @jwt_required()
 def get_ventas():
     """
-    Get all ventas from Firestore.
+    Get all ventas from Firestore, with optional filtering.
 
-    Retrieves all documents from the 'ventas' collection and returns them as a list.
+    Retrieves documents from the 'ventas' collection. If a 'telefono'
+    query parameter is provided, it filters the ventas for that client.
+    Otherwise, it returns all ventas.
 
     Returns:
-        JSON: A list of all ventas or an error message.
+        JSON: A list of ventas or an error message.
     """
     if not ventas_collection:
         return jsonify({"error": "Firestore not initialized"}), 500
     try:
+        telefono_filter = request.args.get('telefono')
+        
+        if telefono_filter:
+            query = ventas_collection.where('telefono', '==', int(telefono_filter))
+        else:
+            query = ventas_collection
+
         all_ventas = []
-        for doc in ventas_collection.stream():
+        for doc in query.stream():
             venta = doc.to_dict()
             venta['id'] = doc.id
             all_ventas.append(venta)
+            
         return jsonify(ventas_schema.dump(all_ventas)), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -138,49 +148,6 @@ def count_ventas_by_status():
             if 'estado_actual' in venta and venta['estado_actual'] in status_counts:
                 status_counts[venta['estado_actual']] += 1
         return jsonify(status_counts), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@api.route('/ventas/search', methods=['GET'])
-@jwt_required()
-def search_ventas():
-    """
-    Search for ventas based on query parameters.
-
-    Supports searching by 'nombre', 'telefono', and 'state'. The query parameters
-    are passed in the URL (e.g., /ventas/search?nombre=John).
-
-    Returns:
-        JSON: A list of matching ventas or an error message.
-    """
-    if not ventas_collection:
-        return jsonify({"error": "Firestore not initialized"}), 500
-    try:
-        query_params = request.args.to_dict()
-        query = ventas_collection
-
-        for key, value in query_params.items():
-            if key in ['nombre', 'telefono', 'estado_actual']:
-                # Attempt to convert telefono and state to a number for querying
-                if key == 'telefono':
-                    try:
-                        value = float(value)
-                    except ValueError:
-                        return jsonify({"error": "telefono parameter must be a number"}), 400
-                if key == 'estado_actual':
-                    try:
-                        value = int(value)
-                    except ValueError:
-                        return jsonify({"error": "state parameter must be an integer"}), 400
-                query = query.where(key, '==', value)
-
-        results = []
-        for doc in query.stream():
-            venta = doc.to_dict()
-            venta['id'] = doc.id
-            results.append(venta)
-        
-        return jsonify(results), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

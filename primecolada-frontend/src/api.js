@@ -19,7 +19,10 @@ export const clientsApi = {
 };
 
 export const ventasApi = {
-  getAll: () => apiClient.get('/ventas'),
+  getAll: (telefono = null) => {
+    const params = telefono ? { telefono } : {};
+    return apiClient.get('/ventas', { params });
+  },
   getById: (id) => apiClient.get(`/ventas/${id}`),
   create: (venta) => apiClient.post('/ventas', venta),
   update: (id, venta) => apiClient.put(`/ventas/${id}`, venta),
