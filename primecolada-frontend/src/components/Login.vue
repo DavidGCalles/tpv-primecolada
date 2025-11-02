@@ -4,7 +4,7 @@
     <form @submit.prevent="login">
       <div class="form-group">
         <label for="phone">Phone Number:</label>
-        <input type="tel" id="phone" v-model="phone" required />
+        <input type="text" id="phone" v-model="phone" required />
       </div>
       <button type="submit">Login</button>
     </form>
