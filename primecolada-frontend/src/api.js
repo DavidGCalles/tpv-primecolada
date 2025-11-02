@@ -28,4 +28,5 @@ export const ventasApi = {
   update: (id, venta) => apiClient.put(`/ventas/${id}`, venta),
   delete: (id) => apiClient.delete(`/ventas/${id}`),
   countByStatus: () => apiClient.get('/ventas/count'),
+  getStats: () => apiClient.get('/ventas/stats'),
 };
