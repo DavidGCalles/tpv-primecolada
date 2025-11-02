@@ -6,7 +6,7 @@
     </div>
     <div v-show="isExpanded" class="summary-body">
       <div
-        v-for="(count, state) in statusCounts"
+        v-for="(count, state) in filteredStatusCounts"
         :key="state"
         class="status-item"
         @click="$emit('filter', state)"
@@ -19,14 +19,21 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { getVentaStateName } from '../stateHelper';
 
-defineProps({
+const props = defineProps({
   statusCounts: {
     type: Object,
     required: true
   }
+});
+
+const filteredStatusCounts = computed(() => {
+  const counts = { ...props.statusCounts };
+  delete counts['ERROR'];
+  delete counts['IMPRIMIENDO'];
+  return counts;
 });
 
 const isExpanded = ref(true);
