@@ -16,7 +16,7 @@
         <input type="number" id="total" v-model.number="editableVenta.coste.total" step="0.5" min="0" required>
 
         <select v-model="editableVenta.estado_actual">
-          <option v-for="(stateValue, stateName) in VentaState" :key="stateValue" :value="stateValue">
+          <option v-for="(stateValue, stateName) in displayedStates" :key="stateValue" :value="stateValue">
             {{ stateName.replace('_', ' ') }}
           </option>
         </select>
@@ -27,7 +27,7 @@
 </template>
 
 <script setup>
-import { ref, watch, watchEffect } from 'vue';
+import { ref, watch, watchEffect, computed } from 'vue';
 import { VentaState } from '../stateHelper';
 
 const props = defineProps({
@@ -36,10 +36,18 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'save']);
 
+const displayedStates = computed(() => {
+  if (props.venta) {
+    return VentaState;
+  }
+  const { ERROR, IMPRIMIENDO, ...filteredStates } = VentaState;
+  return filteredStates;
+});
+
 const editableVenta = ref({
   nombre: '',
   telefono: '',
-  estado_actual: VentaState.IMPRIMIENDO,
+  estado_actual: VentaState.EN_COLA,
   coste: {
     lavadora: 0,
     secadora: 0,
@@ -57,7 +65,7 @@ watchEffect(() => {
     editableVenta.value = {
       nombre: '',
       telefono: '',
-      estado_actual: VentaState.IMPRIMIENDO,
+      estado_actual: VentaState.EN_COLA,
       coste: {
         lavadora: 0,
         secadora: 0,
