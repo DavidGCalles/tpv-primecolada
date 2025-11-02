@@ -108,6 +108,24 @@ def get_swagger_spec():
                     }
                 }
             },
+            "/ventas/stats": {
+                "get": {
+                    "summary": "Get sales statistics for the current day",
+                    "responses": {
+                        "200": {
+                            "description": "A JSON object with daily sales statistics.",
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "total_precio": { "type": "number" },
+                                    "total_ventas": { "type": "integer" },
+                                    "pedidos_antiguos": { "type": "integer" }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
             "/ventas/{venta_id}": {
                 "get": {
                     "summary": "Get a single venta by ID",

@@ -5,6 +5,20 @@
       <span class="toggle-icon">{{ isExpanded ? '▲' : '▼' }}</span>
     </div>
     <div v-show="isExpanded" class="summary-body">
+      <div class="stats-container">
+        <div class="stat-item">
+          <span class="stat-label">Ventas de Hoy</span>
+          <span class="stat-value">{{ stats.total_ventas }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Ingresos de Hoy</span>
+          <span class="stat-value">{{ formatCurrency(stats.total_precio) }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Pedidos Antiguos</span>
+          <span class="stat-value">{{ stats.pedidos_antiguos }}</span>
+        </div>
+      </div>
       <div
         v-for="(count, state) in filteredStatusCounts"
         :key="state"
@@ -19,8 +33,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { getVentaStateName } from '../stateHelper';
+import { ref, computed, onMounted } from 'vue';
+import { ventasApi } from '../api';
 
 const props = defineProps({
   statusCounts: {
@@ -28,6 +42,30 @@ const props = defineProps({
     required: true
   }
 });
+
+const stats = ref({
+  total_precio: 0,
+  total_ventas: 0,
+  pedidos_antiguos: 0
+});
+
+const fetchStats = async () => {
+  try {
+    const response = await ventasApi.getStats();
+    stats.value = response.data;
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+  }
+};
+
+onMounted(fetchStats);
+
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(value);
+};
 
 const filteredStatusCounts = computed(() => {
   const counts = { ...props.statusCounts };
@@ -41,7 +79,6 @@ const isExpanded = ref(true);
 const toggleExpand = () => {
   isExpanded.value = !isExpanded.value;
 };
-
 </script>
 
 <style scoped>
@@ -77,10 +114,36 @@ const toggleExpand = () => {
 }
 
 .summary-body {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
   padding: 16px;
+}
+
+.stats-container {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 8px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stat-label {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #fff;
+}
+
+.stat-value {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #fff;
 }
 
 .status-item {
@@ -118,6 +181,9 @@ const toggleExpand = () => {
 }
 
 @media (max-width: 768px) {
+  .stats-container {
+    flex-direction: column;
+  }
   .summary-body {
     flex-direction: column;
     align-items: stretch;

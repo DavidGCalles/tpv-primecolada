@@ -151,6 +151,48 @@ def count_ventas_by_status():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@api.route('/ventas/stats', methods=['GET'])
+#@jwt_required()
+#@admin_required()
+def get_ventas_stats():
+    """
+    Get sales statistics for the current day.
+
+    Returns:
+        JSON: A dictionary with total_precio, total_ventas, and pedidos_antiguos.
+    """
+    if not ventas_collection:
+        return jsonify({"error": "Firestore not initialized"}), 500
+    try:
+        now = datetime.now()
+        start_of_day = datetime(now.year, now.month, now.day)
+        
+        # Daily stats
+        query_today = ventas_collection.where('created_at', '>=', start_of_day)
+        total_precio_today = 0
+        total_ventas_today = 0
+        for doc in query_today.stream():
+            venta = doc.to_dict()
+            if venta.get('coste'):
+                total_precio_today += venta.get('coste').get('total', 0)
+            total_ventas_today += 1
+            
+        # Old pending orders
+        query_old = ventas_collection.where('created_at', '<', start_of_day)
+        pedidos_antiguos = 0
+        for doc in query_old.stream():
+            venta = doc.to_dict()
+            if venta.get('estado_actual') not in [VentaState.ENTREGADO.value, VentaState.CANCELADO.value]:
+                pedidos_antiguos += 1
+
+        return jsonify({
+            "total_precio": total_precio_today,
+            "total_ventas": total_ventas_today,
+            "pedidos_antiguos": pedidos_antiguos
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @api.route('/ventas/<string:venta_id>', methods=['GET'])
 @jwt_required()
 def get_venta(venta_id):
