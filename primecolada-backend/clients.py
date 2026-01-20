@@ -11,6 +11,7 @@ clients_api = Blueprint('clients_api', __name__)
 clients_collection = db.collection('clients') if db else None
 
 @clients_api.route('/clients', methods=['POST'])
+@token_required
 def create_client():
     """
     Create a new client in Firestore.
