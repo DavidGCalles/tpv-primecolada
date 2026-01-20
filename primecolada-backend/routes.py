@@ -1,11 +1,11 @@
 import requests
 import os
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from datetime import datetime
 from google.cloud import firestore
 from db import db  # Import the Firestore client from db.py
 from enums import VentaState
-from models import venta_schema, ventas_schema
+from models import venta_schema, ventas_schema, client_schema, clients_schema
 from marshmallow import ValidationError
 from flask_jwt_extended import jwt_required, get_jwt
 from functools import wraps
@@ -43,16 +43,13 @@ ventas_collection = db.collection('ventas') if db else None
 clients_collection = db.collection('clients') if db else None
 
 @api.route('/ventas', methods=['POST'])
-@jwt_required()
-@admin_required()
+
 def create_venta():
     """
     Create a new venta in Firestore.
 
-    This endpoint expects a JSON payload with 'telefono' and 'nombre' fields.
-    It adds a new document to the 'ventas' collection with a default state
-    of 'IMPRIMIENDO' and a server-side timestamp. If a client with the given
-    'telefono' does not exist, a new client will be created.
+    This endpoint expects a JSON payload with 'client_id', 'nombre', 'estado_actual', and 'coste' fields.
+    The client_id should be a valid Firebase UID of an existing client.
 
     Returns:
         JSON: A confirmation message with the new document's ID or an error message.
@@ -66,15 +63,11 @@ def create_venta():
         except ValidationError as err:
             return jsonify(err.messages), 400
 
-        # Upsert client
-        client_id = str(validated_data['telefono'])
+        # Verify client exists
+        client_id = validated_data['client_id']
         client_ref = clients_collection.document(client_id)
         if not client_ref.get().exists:
-            client_ref.set({
-                'nombre': validated_data['nombre'],
-                'telefono': validated_data['telefono'],
-                'created_at': firestore.SERVER_TIMESTAMP
-            })
+            return jsonify({"error": "Client does not exist"}), 400
 
         # Add a new document with an auto-generated ID and default state
         doc_data = validated_data
@@ -94,12 +87,11 @@ def create_venta():
         return jsonify({"error": str(e)}), 500
     
 @api.route('/ventas', methods=['GET'])
-@jwt_required()
 def get_ventas():
     """
     Get all ventas from Firestore, with optional filtering.
 
-    Retrieves documents from the 'ventas' collection. If a 'telefono'
+    Retrieves documents from the 'ventas' collection. If a 'client_id'
     query parameter is provided, it filters the ventas for that client.
     Otherwise, it returns all ventas.
 
@@ -109,10 +101,10 @@ def get_ventas():
     if not ventas_collection:
         return jsonify({"error": "Firestore not initialized"}), 500
     try:
-        telefono_filter = request.args.get('telefono')
+        client_id_filter = request.args.get('client_id')
         
-        if telefono_filter:
-            query = ventas_collection.where('telefono', '==', int(telefono_filter))
+        if client_id_filter:
+            query = ventas_collection.where('client_id', '==', client_id_filter)
         else:
             query = ventas_collection
 
@@ -127,8 +119,6 @@ def get_ventas():
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/count', methods=['GET'])
-@jwt_required()
-@admin_required()
 def count_ventas_by_status():
     """
     Count ventas by their current status.
@@ -152,8 +142,6 @@ def count_ventas_by_status():
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/stats', methods=['GET'])
-#@jwt_required()
-#@admin_required()
 def get_ventas_stats():
     """
     Get sales statistics for the current day.
@@ -194,7 +182,6 @@ def get_ventas_stats():
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/<string:venta_id>', methods=['GET'])
-@jwt_required()
 def get_venta(venta_id):
     """
     Get a single venta by its ID.
@@ -220,8 +207,6 @@ def get_venta(venta_id):
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/<string:venta_id>', methods=['PUT'])
-@jwt_required()
-@admin_required()
 def update_venta(venta_id):
     """
     Update an existing venta.
@@ -274,8 +259,6 @@ def update_venta(venta_id):
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/<string:venta_id>', methods=['DELETE'])
-@jwt_required()
-@admin_required()
 def delete_venta(venta_id):
     """
     Delete a venta from Firestore.
