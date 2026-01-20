@@ -4,6 +4,7 @@ from db import db
 from flask_jwt_extended import create_access_token, get_jwt
 from auth_middleware import token_required
 from models import client_schema
+import logging
 
 clients_api = Blueprint('clients_api', __name__)
 
@@ -38,6 +39,7 @@ def create_client():
         })
         return jsonify({"id": client_id}), 201
     except Exception as e:
+        logging.error(f"Error creating client: {e}")
         return jsonify({"error": str(e)}), 500
 
 @clients_api.route('/clients', methods=['GET'])

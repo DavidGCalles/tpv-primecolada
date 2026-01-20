@@ -3,6 +3,7 @@ from flask import Flask, jsonify
 from flask_swagger_ui import get_swaggerui_blueprint
 from flask_cors import CORS
 import firebase_admin
+import logging
 
 # Import routes and swagger spec
 from routes import api
@@ -47,5 +48,9 @@ def test_auth():
     return jsonify({'message': '¡Estás dentro!', 'uid': g.user_id}), 200
 
 if __name__ == '__main__':
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
+
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=True, host='0.0.0.0', port=port)
