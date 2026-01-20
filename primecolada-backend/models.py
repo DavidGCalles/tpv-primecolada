@@ -16,12 +16,21 @@ class HistorialEntrySchema(Schema):
     entrada = fields.DateTime(required=True, allow_none=True)
     salida = fields.DateTime(required=False, allow_none=True)
 
+class ClientSchema(Schema):
+    class Meta:
+        unknown = EXCLUDE
+    
+    id = fields.Str(dump_only=True)
+    nombre = fields.Str(required=True)
+    telefono = fields.Str(required=False, allow_none=True)  # Make telefono optional since UID is the ID
+    created_at = fields.DateTime(dump_only=True)
+
 class VentaSchema(Schema):
     class Meta:
         unknown = EXCLUDE
 
     id = fields.Str(dump_only=True)
-    telefono = fields.Int(required=True)
+    client_id = fields.Str(required=True)  # Changed from telefono Int to client_id String
     nombre = fields.Str(required=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
@@ -41,3 +50,6 @@ class VentaSchema(Schema):
 
 venta_schema = VentaSchema()
 ventas_schema = VentaSchema(many=True)
+
+client_schema = ClientSchema()
+clients_schema = ClientSchema(many=True)
