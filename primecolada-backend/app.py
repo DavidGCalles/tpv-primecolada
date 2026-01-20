@@ -10,6 +10,10 @@ from clients import clients_api
 from swagger_spec import get_swagger_spec
 import db  # Import the db module to initialize Firestore
 
+# ... arriba del todo ...
+from auth_middleware import token_required 
+from flask import g
+
 # Initialize Flask App
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -35,6 +39,12 @@ app.register_blueprint(clients_api)
 def swagger_spec_json():
     """Serve the swagger.json file."""
     return jsonify(get_swagger_spec())
+
+
+@app.route('/test-auth', methods=['GET'])
+@token_required
+def test_auth():
+    return jsonify({'message': '¡Estás dentro!', 'uid': g.user_id}), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
