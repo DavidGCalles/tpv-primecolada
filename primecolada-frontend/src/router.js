@@ -6,6 +6,11 @@ import { userState } from './stateHelper';
 
 const routes = [
   {
+    path: '/horarios',
+    name: 'Horarios',
+    component: UserView
+  }
+  ,{
     path: '/admin',
     name: 'Ventas',
     component: Ventas,
