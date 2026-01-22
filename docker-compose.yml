@@ -14,10 +14,10 @@ services:
     build: 
       context: ./primecolada-frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://localhost:5000
     ports:
       - "8080:8080"
-    env_file:
-      - ./primecolada-frontend/.env.development
     environment:
       - PORT=8080
     depends_on:
