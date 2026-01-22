@@ -5,7 +5,7 @@ export const userState = reactive({
   isAdmin: false,
   login(userData) {
     this.user = userData;
-    this.isAdmin = userData.admin === true;
+    this.isAdmin = false;
   },
   logout() {
     this.user = null;

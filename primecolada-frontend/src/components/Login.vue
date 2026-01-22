@@ -50,6 +50,7 @@ import {
   signInAnonymously
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
+import { userState } from '../stateHelper';
 
 const router = useRouter();
 const email = ref('');
@@ -59,8 +60,9 @@ const isRegistering = ref(false); // Toggle entre Login y Registro
 
 // --- HELPERS ---
 const handleSuccess = (user, destination = '/ventas') => {
+  userState.login(user);
   console.log("✅ Login éxito:", user.uid, "| Modo:", user.isAnonymous ? "Anónimo" : "Autenticado");
-  router.push(destination);
+  router.push(user.isAnonymous ? '/horarios' : '/user');
 };
 
 const handleError = (err) => {

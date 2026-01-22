@@ -35,7 +35,6 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       console.error("No autorizado (401). El token podría haber expirado o ser inválido.");
-      // Aquí podrías disparar un logout forzado o redirigir al login
       // window.location.href = '/login'; 
     }
     return Promise.reject(error);
@@ -47,8 +46,8 @@ export const clientsApi = {
 };
 
 export const ventasApi = {
-  getAll: (telefono = null) => {
-    const params = telefono ? { telefono } : {};
+  getAll: (clientId = null) => {
+    const params = clientId ? { client_id: clientId } : {};
     return apiClient.get('/ventas', { params });
   },
   getById: (id) => apiClient.get(`/ventas/${id}`),

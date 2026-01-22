@@ -17,8 +17,8 @@ def admin_required():
     def wrapper(fn):
         @wraps(fn)
         def decorator(*args, **kwargs):
-            claims = get_jwt()
-            if claims.get('is_admin'):
+            # CAMBIO: Usamos la variable global g que rellenó el middleware
+            if g.get('is_admin'):
                 return fn(*args, **kwargs)
             else:
                 return jsonify(msg="Admins only!"), 403
