@@ -9,11 +9,13 @@
 <script setup>
 import { userState } from '../stateHelper';
 import { useRouter } from 'vue-router';
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase';
 
 const router = useRouter();
 
-const logout = () => {
-  userState.logout();
+const logout = async () => {
+  await signOut(auth);
   router.push('/login');
 };
 </script>

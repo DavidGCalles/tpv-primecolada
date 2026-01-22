@@ -1,6 +1,14 @@
 # Stage 1: Build the application
 FROM node:20-alpine AS build
 WORKDIR /app
+
+# --- AÑADIR ESTO ---
+# Definimos el argumento (lo recibiremos desde docker-compose)
+ARG VITE_API_BASE_URL
+# Lo convertimos en variable de entorno para el build
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+# -------------------
+    
 COPY package*.json ./
 RUN npm install
 COPY . .

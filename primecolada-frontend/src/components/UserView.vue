@@ -1,15 +1,22 @@
 <template>
   <div class="user-view-container">
-    <h2>Bienvenido, {{ userState.user.nombre }}</h2>
-    <p>Telefono: {{ userState.user.telefono }}</p>
+    <h2>Bienvenido, {{ userState.user.displayName || userState.user.email || 'Usuario' }}</h2>
+    
+    <div class="user-info-card">
+      <p><strong>Email:</strong> {{ userState.user.email }}</p>
+      <p><strong>ID de Usuario (UID):</strong> <small>{{ userState.user.uid }}</small></p>
+      <p v-if="userState.user.phoneNumber"><strong>Teléfono:</strong> {{ userState.user.phoneNumber }}</p>
+    </div>
+
     <h3>Tus pedidos:</h3>
-    <div v-if="loading">Loading...</div>
-    <div v-if="error">{{ error }}</div>
+    <div v-if="loading">Cargando pedidos...</div>
+    <div v-if="error" class="error-msg">{{ error }}</div>
+    
     <div v-if="ventas.length" class="ventas-grid">
       <UserVentaCard v-for="venta in ventas" :key="venta.id" :venta="venta" />
     </div>
-    <div v-else>
-      <p>No ventas found.</p>
+    <div v-else-if="!loading">
+      <p>No tienes pedidos registrados.</p>
     </div>
   </div>
 </template>
@@ -36,12 +43,17 @@ export default {
   },
   methods: {
     async fetchVentas() {
+      // Si no hay usuario cargado, no hacemos nada
+      if (!this.userState.user) return;
+
       this.loading = true;
       try {
-        const response = await ventasApi.getAll(this.userState.user.telefono);
+        // CAMBIO CRÍTICO: Usamos el UID de Firebase para filtrar, no el teléfono
+        console.log("Solicitando ventas para UID:", this.userState.user.uid);
+        const response = await ventasApi.getAll(this.userState.user.uid);
         this.ventas = response.data;
       } catch (err) {
-        this.error = 'Failed to load ventas.';
+        this.error = 'Error al cargar las ventas.';
         console.error(err);
       } finally {
         this.loading = false;
@@ -54,10 +66,22 @@ export default {
 <style scoped>
 .user-view-container {
   padding: 20px;
+  color: #fff;
+}
+.user-info-card {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 .ventas-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
+}
+.error-msg {
+  color: #ff6b6b;
+  font-weight: bold;
 }
 </style>
