@@ -41,6 +41,7 @@ lerna-debug.log*
 /primecolada-backend/.env.backend
 /primecolada-frontend/.env.frontend
 /primecolada-backend/firebase_credentials.json
+/primecolada-frontend/package-lock.json
 
 
 # Docker
