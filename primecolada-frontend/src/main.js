@@ -3,10 +3,21 @@ import App from './App.vue'
 import router from './router'
 import './main.css'
 import { userState } from './stateHelper'
+import { onAuthStateChanged } from 'firebase/auth'
+import { auth } from './firebase'
 
-const user = localStorage.getItem('user');
-if (user) {
-  userState.login(JSON.parse(user));
-}
+let authReady = false;
 
-createApp(App).use(router).mount('#app')
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    userState.login(user);
+    localStorage.setItem('user', JSON.stringify(user));
+  } else {
+    userState.logout();
+    localStorage.removeItem('user');
+  }
+  if (!authReady) {
+    authReady = true;
+    createApp(App).use(router).mount('#app');
+  }
+});
