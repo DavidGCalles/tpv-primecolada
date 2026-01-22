@@ -7,7 +7,7 @@ from db import db  # Import the Firestore client from db.py
 from enums import VentaState
 from models import venta_schema, ventas_schema, client_schema, clients_schema
 from marshmallow import ValidationError
-from flask_jwt_extended import jwt_required, get_jwt
+from auth_middleware import token_required
 from functools import wraps
 
 # Create a Blueprint for the routes
@@ -43,7 +43,7 @@ ventas_collection = db.collection('ventas') if db else None
 clients_collection = db.collection('clients') if db else None
 
 @api.route('/ventas', methods=['POST'])
-
+@token_required
 def create_venta():
     """
     Create a new venta in Firestore.
@@ -87,6 +87,7 @@ def create_venta():
         return jsonify({"error": str(e)}), 500
     
 @api.route('/ventas', methods=['GET'])
+@token_required
 def get_ventas():
     """
     Get all ventas from Firestore, with optional filtering.
@@ -119,6 +120,7 @@ def get_ventas():
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/count', methods=['GET'])
+@token_required
 def count_ventas_by_status():
     """
     Count ventas by their current status.
@@ -142,6 +144,7 @@ def count_ventas_by_status():
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/stats', methods=['GET'])
+@token_required
 def get_ventas_stats():
     """
     Get sales statistics for the current day.
@@ -182,6 +185,7 @@ def get_ventas_stats():
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/<string:venta_id>', methods=['GET'])
+@token_required
 def get_venta(venta_id):
     """
     Get a single venta by its ID.
@@ -207,6 +211,7 @@ def get_venta(venta_id):
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/<string:venta_id>', methods=['PUT'])
+@token_required
 def update_venta(venta_id):
     """
     Update an existing venta.
@@ -259,6 +264,7 @@ def update_venta(venta_id):
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/<string:venta_id>', methods=['DELETE'])
+@token_required
 def delete_venta(venta_id):
     """
     Delete a venta from Firestore.
@@ -284,6 +290,7 @@ def delete_venta(venta_id):
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/imprimiendo', methods=['GET'])
+@token_required
 def get_imprimiendo_ventas():
     """
     Get all ventas from Firestore with the state 'IMPRIMIENDO'.
