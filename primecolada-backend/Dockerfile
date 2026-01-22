@@ -1,6 +1,6 @@
 # Use an official Python runtime as a parent image
 FROM python:3.12-slim
-
+ENV PYTHONUNBUFFERED=1
 # Set the working directory in the container
 WORKDIR /app
 
@@ -18,4 +18,4 @@ ENV FLASK_APP=app.py
 ENV FLASK_RUN_HOST=0.0.0.0
 
 # Run app.py when the container launches
-CMD exec gunicorn --workers 4 --bind "0.0.0.0:$PORT" app:app
+CMD exec gunicorn --workers 4 --bind "0.0.0.0:$PORT" --access-logfile - --error-logfile - --log-level debug app:app

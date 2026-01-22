@@ -2,7 +2,8 @@ import os
 from flask import Flask, jsonify
 from flask_swagger_ui import get_swaggerui_blueprint
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager
+import firebase_admin
+import logging
 
 # Import routes and swagger spec
 from routes import api
@@ -10,13 +11,16 @@ from clients import clients_api
 from swagger_spec import get_swagger_spec
 import db  # Import the db module to initialize Firestore
 
+# ... arriba del todo ...
+from auth_middleware import token_required 
+from flask import g
+
 # Initialize Flask App
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Setup the Flask-JWT-Extended extension
-app.config["JWT_SECRET_KEY"] = "super-secret"  # Change this in your production environment!
-jwt = JWTManager(app)
+if not firebase_admin._apps:
+    firebase_admin.initialize_app()
 
 # --- Swagger UI Configuration ---
 SWAGGER_URL = '/api/docs'
@@ -37,6 +41,16 @@ def swagger_spec_json():
     """Serve the swagger.json file."""
     return jsonify(get_swagger_spec())
 
+
+@app.route('/test-auth', methods=['GET'])
+@token_required
+def test_auth():
+    return jsonify({'message': '¡Estás dentro!', 'uid': g.user_id}), 200
+
 if __name__ == '__main__':
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
+
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=True, host='0.0.0.0', port=port)
