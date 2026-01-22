@@ -51,6 +51,7 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { userState } from '../stateHelper';
+import { userApi } from '../api';
 
 const router = useRouter();
 const email = ref('');
@@ -59,10 +60,27 @@ const error = ref('');
 const isRegistering = ref(false); // Toggle entre Login y Registro
 
 // --- HELPERS ---
-const handleSuccess = (user, destination = '/ventas') => {
+const handleSuccess = async (user, destination = '/ventas') => {
   userState.login(user);
   console.log("✅ Login éxito:", user.uid, "| Modo:", user.isAnonymous ? "Anónimo" : "Autenticado");
-  router.push(user.isAnonymous ? '/horarios' : '/user');
+  
+  if (!user.isAnonymous) {
+    try {
+      const profile = await userApi.getProfile();
+      userState.isAdmin = profile.data.is_admin;
+      console.log("Perfil obtenido:", profile.data);
+    } catch (err) {
+      console.error("Error obteniendo perfil:", err);
+      // Asumir no admin si falla
+      userState.isAdmin = false;
+    }
+  }
+  
+  if (userState.isAdmin) {
+    router.push('/admin');
+  } else {
+    router.push(user.isAnonymous ? '/horarios' : '/user');
+  }
 };
 
 const handleError = (err) => {

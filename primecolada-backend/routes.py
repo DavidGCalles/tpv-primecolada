@@ -42,6 +42,20 @@ def convert_timestamps(data):
 ventas_collection = db.collection('ventas') if db else None
 clients_collection = db.collection('clients') if db else None
 
+@api.route('/user/profile', methods=['GET'])
+@token_required
+def get_user_profile():
+    """
+    Get the current user's profile information.
+    
+    Returns:
+        JSON: User ID and admin status.
+    """
+    return jsonify({
+        'user_id': g.user_id,
+        'is_admin': g.is_admin
+    })
+
 @api.route('/ventas', methods=['POST'])
 @token_required
 def create_venta():

@@ -57,3 +57,7 @@ export const ventasApi = {
   countByStatus: () => apiClient.get('/ventas/count'),
   getStats: () => apiClient.get('/ventas/stats'),
 };
+
+export const userApi = {
+  getProfile: () => apiClient.get('/user/profile'),
+};
