@@ -49,7 +49,7 @@ const editableVenta = ref(JSON.parse(JSON.stringify(props.venta)));
 const filteredStates = computed(() => {
   return Object.entries(VentaState)
     .map(([name, value]) => ({ name: getVentaStateName(value), value }))
-    .filter(state => state.value !== VentaState.IMPRIMIENDO && state.value !== VentaState.ERROR)
+    .filter(state => state.value !== VentaState.ERROR)
     .slice(-4);
 });
 

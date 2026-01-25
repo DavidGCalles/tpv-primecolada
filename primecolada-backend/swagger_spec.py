@@ -106,11 +106,10 @@ def get_swagger_spec():
                                 "type": "object",
                                 "properties": {
                                     "0": { "type": "integer", "description": "Count of ventas with status ERROR" },
-                                    "1": { "type": "integer", "description": "Count of ventas with status IMPRIMIENDO" },
-                                    "2": { "type": "integer", "description": "Count of ventas with status EN_COLA" },
-                                    "3": { "type": "integer", "description": "Count of ventas with status LAVANDO" },
-                                    "4": { "type": "integer", "description": "Count of ventas with status PTE_RECOGIDA" },
-                                    "5": { "type": "integer", "description": "Count of ventas with status RECOGIDO" }
+                                    "1": { "type": "integer", "description": "Count of ventas with status EN_COLA" },
+                                    "2": { "type": "integer", "description": "Count of ventas with status LAVANDO" },
+                                    "3": { "type": "integer", "description": "Count of ventas with status PTE_RECOGIDA" },
+                                    "4": { "type": "integer", "description": "Count of ventas with status RECOGIDO" }
                                 }
                             }
                         }

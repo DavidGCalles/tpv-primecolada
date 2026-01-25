@@ -36,8 +36,8 @@ class VentaSchema(Schema):
     updated_at = fields.DateTime(dump_only=True)
 
     estado_actual = fields.Int(
-        required=True,
-        validate=validate.OneOf([e.value for e in VentaState])
+        load_default=VentaState.EN_COLA.value,
+        validate=validate.OneOf([e.value for e in VentaState]),
     )
 
     coste = fields.Nested(CosteSchema, required=True)
