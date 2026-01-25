@@ -22,12 +22,3 @@ services:
       - PORT=8080
     depends_on:
       - backend
-  websockets:
-    build: ./primecolada-websockets
-    ports:
-      - "3001:3001"
-    environment:
-      - BACKEND_HOST=backend
-      - BACKEND_PORT=5000
-    depends_on:
-      - backend

@@ -95,7 +95,6 @@ def create_venta():
             }
         }
         update_time, doc_ref = ventas_collection.add(doc_data)
-        broadcast_imprimiendo_update()  # broadcast updated list
         return jsonify({"id": doc_ref.id}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -270,7 +269,6 @@ def update_venta(venta_id):
                 validated_data['historial_estados'] = historial
 
             doc_ref.update(validated_data)
-            broadcast_imprimiendo_update()  # broadcast updated list
             return jsonify({"success": True}), 200
         else:
             return jsonify({"error": "Venta not found"}), 404
@@ -296,61 +294,8 @@ def delete_venta(venta_id):
         doc = doc_ref.get()
         if doc.exists:
             doc_ref.delete()
-            broadcast_imprimiendo_update()  # broadcast updated list
             return jsonify({"success": True}), 200
         else:
             return jsonify({"error": "Venta not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-@api.route('/ventas/imprimiendo', methods=['GET'])
-@token_required
-def get_imprimiendo_ventas():
-    """
-    Get all ventas from Firestore with the state 'IMPRIMIENDO'.
-
-    Returns:
-        JSON: A list of ventas in the 'IMPRIMIENDO' state or an error message.
-    """
-    if not ventas_collection:
-        return jsonify({"error": "Firestore not initialized"}), 500
-    try:
-        query = ventas_collection.where('estado_actual', '==', VentaState.IMPRIMIENDO.value)
-        results = []
-        for doc in query.stream():
-            venta = doc.to_dict()
-            venta['id'] = doc.id
-            results.append(venta)
-        results = convert_timestamps(results)
-        return jsonify(results), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-def broadcast_imprimiendo_update():
-    """
-    Fetch and broadcast 'imprimiendo' ventas via WebSocket service.
-
-    Queries the 'ventas' collection for documents where the state is 'IMPRIMIENDO'
-    and sends the results to the WebSocket service to be broadcasted to all 
-    connected clients.
-    """
-    if not ventas_collection:
-        return
-    try:
-        query = ventas_collection.where('estado_actual', '==', VentaState.IMPRIMIENDO.value)
-        results = []
-        for doc in query.stream():
-            venta = doc.to_dict()
-            venta['id'] = doc.id
-            results.append(venta)
-        results = convert_timestamps(results)
-        
-        # Send request to WebSocket service
-        websocket_url = os.environ.get('WEBSOCKET_URL', 'http://websockets:3001')
-        try:
-            requests.post(f'{websocket_url}/broadcast', json={"message": results})
-        except requests.exceptions.RequestException as e:
-            print(f"Error sending broadcast request: {e}")
-
-    except Exception as e:
-        print(f"Error in broadcast_imprimiendo_update: {e}")

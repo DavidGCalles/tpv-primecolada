@@ -40,7 +40,7 @@ const displayedStates = computed(() => {
   if (props.venta) {
     return VentaState;
   }
-  const { ERROR, IMPRIMIENDO, ...filteredStates } = VentaState;
+  const { ERROR, ...filteredStates } = VentaState;
   return filteredStates;
 });
 
