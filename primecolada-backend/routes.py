@@ -9,6 +9,7 @@ from models import venta_schema, ventas_schema, client_schema, clients_schema
 from marshmallow import ValidationError
 from auth_middleware import token_required
 from functools import wraps
+from utils import get_or_create_client_by_phone
 
 # Create a Blueprint for the routes
 api = Blueprint('api', __name__)
@@ -61,30 +62,34 @@ def get_user_profile():
 def create_venta():
     """
     Create a new venta in Firestore.
-
-    This endpoint expects a JSON payload with 'client_id', 'nombre', 'estado_actual', and 'coste' fields.
-    The client_id should be a valid Firebase UID of an existing client.
-
-    Returns:
-        JSON: A confirmation message with the new document's ID or an error message.
+    ADR-003: Accepts 'telefono' instead of 'client_id'.
     """
-    if not ventas_collection:
+    if not db:
         return jsonify({"error": "Firestore not initialized"}), 500
     try:
         data = request.get_json()
+        
+        # Validate payload (Ensure models.py VentaSchema requires telefono, not client_id)
         try:
             validated_data = venta_schema.load(data)
         except ValidationError as err:
             return jsonify(err.messages), 400
 
-        # Verify client exists
-        client_id = validated_data['client_id']
-        client_ref = clients_collection.document(client_id)
-        if not client_ref.get().exists:
-            return jsonify({"error": "Client does not exist"}), 400
+        # --- SHADOW USER RESOLUTION ---
+        # We trust the helper to find the ID or create a ghost user
+        try:
+            client_doc_id = get_or_create_client_by_phone(
+                validated_data['telefono'], 
+                validated_data['nombre']
+            )
+        except Exception as e:
+            return jsonify({"error": f"Resolution failed: {str(e)}"}), 500
+        # ------------------------------
 
-        # Add a new document with an auto-generated ID and default state
+        # Construct the Venta document
         doc_data = validated_data
+        doc_data['client_id'] = client_doc_id  # Link the sale to the resolved ID
+        
         now = datetime.now()
         doc_data['created_at'] = now
         doc_data['updated_at'] = now
@@ -94,8 +99,17 @@ def create_venta():
                 'salida': None
             }
         }
+        
+        # Save to Firestore
+        ventas_collection = db.collection('ventas')
         update_time, doc_ref = ventas_collection.add(doc_data)
-        return jsonify({"id": doc_ref.id}), 201
+        
+        return jsonify({
+            "id": doc_ref.id, 
+            "client_id": client_doc_id,
+            "message": "Venta created and linked to Client (Shadow or Registered)"
+        }), 201
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     

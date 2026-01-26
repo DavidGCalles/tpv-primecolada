@@ -5,6 +5,7 @@ from flask_jwt_extended import create_access_token, get_jwt
 from auth_middleware import token_required
 from models import client_schema
 import logging
+from utils import get_or_create_client_by_phone
 
 clients_api = Blueprint('clients_api', __name__)
 
@@ -129,28 +130,68 @@ def delete_client(client_id):
         return jsonify({"error": str(e)}), 500
 
 @clients_api.route('/clients/login', methods=['POST'])
+@token_required
 def client_login():
     """
-    Authenticate a client using Firebase token.
-    Returns a backend JWT for the authenticated user.
+    Authenticate a client AND claim their Shadow History.
     """
     if not clients_collection:
         return jsonify({"error": "Firestore not initialized"}), 500
     try:
-        client_id = g.user_id
-        doc_ref = clients_collection.document(client_id)
-        doc = doc_ref.get()
-        
-        if doc.exists:
-            client_data = doc.to_dict()
-            is_admin = client_data.get('admin', False)
-            access_token = create_access_token(identity=client_id, additional_claims={'is_admin': is_admin})
-            return jsonify(access_token=access_token, user=client_data), 200
-        else:
-            return jsonify({"error": "Client not found"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        uid = g.user_id
+        data = request.get_json() or {}
+        phone_input = data.get('telefono')
+        # Ideally we prefer the phone from the Firebase Token, but input works for MVP
 
+        # 1. Search for ALREADY REGISTERED User (by UID)
+        # Note: 'firebase_uid' is the field we added to the Client Schema
+        query_uid = clients_collection.where('firebase_uid', '==', uid).limit(1)
+        results_uid = list(query_uid.stream())
+
+        final_doc_id = None
+        client_data = None
+
+        if results_uid:
+            # Case A: User already exists and is claimed.
+            doc = results_uid[0]
+            final_doc_id = doc.id
+            client_data = doc.to_dict()
+        
+        elif phone_input:
+            # Case B: First time logging in. Let's see if they have a ghost.
+            # We use the helper to get the ID (it will create a shadow if none exists)
+            final_doc_id = get_or_create_client_by_phone(phone_input, data.get('nombre', 'Usuario Digital'))
+            
+            # NOW WE MERGE: Stamp the Firebase UID onto that document
+            doc_ref = clients_collection.document(final_doc_id)
+            doc_ref.update({
+                'firebase_uid': uid,
+                'updated_at': firestore.SERVER_TIMESTAMP
+            })
+            
+            client_data = doc_ref.get().to_dict()
+            logging.info(f"MERGE: User {uid} claimed Shadow Account {final_doc_id}")
+            
+        else:
+            return jsonify({"error": "User not registered and no phone provided."}), 404
+
+        # Generate Backend Session Token
+        is_admin = client_data.get('admin', False)
+        access_token = create_access_token(
+            identity=final_doc_id, # IDENTITY IS NOW THE FIRESTORE DOC ID, NOT THE UID
+            additional_claims={'is_admin': is_admin, 'firebase_uid': uid}
+        )
+        
+        return jsonify({
+            "access_token": access_token, 
+            "user": client_data, 
+            "id": final_doc_id
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Login error: {e}")
+        return jsonify({"error": str(e)}), 500
+    
 @clients_api.route('/clients/<string:client_id>/stats', methods=['GET'])
 def get_client_stats(client_id):
     """
