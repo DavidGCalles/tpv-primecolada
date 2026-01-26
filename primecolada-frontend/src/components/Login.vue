@@ -51,7 +51,7 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { userState } from '../stateHelper';
-import { userApi } from '../api';
+import { userApi, clientsApi } from '../api';
 
 const router = useRouter();
 const email = ref('');
@@ -60,52 +60,72 @@ const error = ref('');
 const isRegistering = ref(false); // Toggle entre Login y Registro
 
 // --- HELPERS ---
-const handleSuccess = async (user, destination = '/ventas') => {
-  userState.login(user);
-  console.log("✅ Login éxito:", user.uid, "| Modo:", user.isAnonymous ? "Anónimo" : "Autenticado");
+const handleSuccess = async (user, destination = null) => {
+  console.log("✅ Auth Firebase OK:", user.uid);
   
-  if (!user.isAnonymous) {
-    try {
-      const profile = await userApi.getProfile();
-      userState.isAdmin = profile.data.is_admin;
-      console.log("Perfil obtenido:", profile.data);
-    } catch (err) {
-      console.error("Error obteniendo perfil:", err);
-      // Asumir no admin si falla
-      userState.isAdmin = false;
+  try {
+    // 1. LOGIN EN BACKEND (El "Merge" del Shadow User)
+    // Enviamos el teléfono si existe en Firebase, si no, el backend buscará por UID
+    let dbId = null;
+    let isAdmin = false;
+
+    if (!user.isAnonymous) {
+      // Intenta hacer login en backend para reclamar historial
+      try {
+        const loginPayload = {
+            telefono: user.phoneNumber || null, // Si Firebase tiene el teléfono, lo usamos
+            nombre: user.displayName || user.email
+        };
+        const backendResponse = await clientsApi.login(loginPayload);
+        
+        // El backend nos devuelve el ID real de Firestore y si es admin
+        dbId = backendResponse.data.id;
+        isAdmin = backendResponse.data.user?.admin || false;
+        
+        // Guardamos persistencia para recargas
+        localStorage.setItem('dbId', dbId);
+        console.log("🔗 Vinculación Backend OK. DB_ID:", dbId);
+
+      } catch (err) {
+        console.warn("⚠️ Backend login falló (posiblemente primer login sin teléfono), fallback a perfil simple:", err);
+        // Fallback: Si falla el login específico de cliente, intentamos obtener perfil básico
+         try {
+            const profile = await userApi.getProfile();
+            isAdmin = profile.data.is_admin;
+         } catch (e) { console.error("Error perfil", e); }
+      }
     }
-  }
-  
-  if (userState.isAdmin) {
-    router.push('/admin');
-  } else {
-    router.push(user.isAnonymous ? '/horarios' : '/user');
+
+    // 2. ACTUALIZAR ESTADO
+    userState.login(user, dbId);
+    userState.isAdmin = isAdmin;
+
+    // 3. REDIRECCIÓN
+    if (destination) {
+      router.push(destination);
+    } else if (userState.isAdmin) {
+      router.push('/admin');
+    } else {
+      router.push(user.isAnonymous ? '/horarios' : '/user');
+    }
+
+  } catch (err) {
+    handleError(err);
   }
 };
 
 const handleError = (err) => {
   console.error("❌ Error Auth:", err);
-  // Traducir errores comunes de Firebase a humano
-  switch (err.code) {
-    case 'auth/invalid-email': error.value = 'El correo no es válido.'; break;
-    case 'auth/user-not-found': error.value = 'Usuario no encontrado.'; break;
-    case 'auth/wrong-password': error.value = 'Contraseña incorrecta.'; break;
-    case 'auth/email-already-in-use': error.value = 'Ese correo ya está registrado.'; break;
-    case 'auth/weak-password': error.value = 'La contraseña es muy débil (min 6 caracteres).'; break;
-    default: error.value = err.message;
-  }
+  error.value = err.message || "Error desconocido";
 };
 
-// --- ACTIONS ---
-
+// --- ACTIONS (Sin cambios en la lógica de llamada, solo usan handleSuccess) ---
 const loginGoogle = async () => {
   error.value = '';
   try {
     const result = await signInWithPopup(auth, googleProvider);
     handleSuccess(result.user);
-  } catch (err) {
-    handleError(err);
-  }
+  } catch (err) { handleError(err); }
 };
 
 const handleEmailAuth = async () => {
@@ -118,20 +138,15 @@ const handleEmailAuth = async () => {
       result = await signInWithEmailAndPassword(auth, email.value, password.value);
     }
     handleSuccess(result.user);
-  } catch (err) {
-    handleError(err);
-  }
+  } catch (err) { handleError(err); }
 };
 
 const loginAnonymous = async () => {
   error.value = '';
   try {
     const result = await signInAnonymously(auth);
-    // IMPORTANTE: Los anónimos van a la landing de horarios, no a ventas
     handleSuccess(result.user, '/horarios'); 
-  } catch (err) {
-    handleError(err);
-  }
+  } catch (err) { handleError(err); }
 };
 </script>
 

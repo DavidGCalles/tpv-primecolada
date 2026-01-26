@@ -43,17 +43,18 @@ export default {
   },
   methods: {
     async fetchVentas() {
-      // Si no hay usuario cargado, no hacemos nada
       if (!this.userState.user) return;
 
       this.loading = true;
       try {
-        // CAMBIO CRÍTICO: Usamos el UID de Firebase para filtrar, no el teléfono
-        console.log("Solicitando ventas para UID:", this.userState.user.uid);
-        const response = await ventasApi.getAll(this.userState.user.uid);
+        // CAMBIO CRÍTICO: Usamos dbId si existe (usuario reclamado), si no, fallback a UID
+        const queryId = this.userState.dbId || this.userState.user.uid;
+        
+        console.log("Solicitando ventas para Client ID:", queryId);
+        const response = await ventasApi.getAll(queryId);
         this.ventas = response.data;
       } catch (err) {
-        this.error = 'Error al cargar las ventas.';
+        this.error = 'Error al cargar tus pedidos.';
         console.error(err);
       } finally {
         this.loading = false;

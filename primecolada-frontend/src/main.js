@@ -1,3 +1,4 @@
+// src/main.js
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
@@ -9,23 +10,27 @@ import { userApi } from './api'
 
 let authReady = false;
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (user) {
-    userState.login(user);
+    // Recuperar dbId guardado en Login
+    const savedDbId = localStorage.getItem('dbId');
+    userState.login(user, savedDbId);
+
     if (!user.isAnonymous) {
-      userApi.getProfile().then(profile => {
+      try {
+        const profile = await userApi.getProfile();
         userState.isAdmin = profile.data.is_admin;
-        console.log("Perfil obtenido en app load:", profile.data);
-      }).catch(err => {
-        console.error("Error obteniendo perfil en app load:", err);
+        console.log("Perfil recargado:", profile.data);
+      } catch (err) {
+        console.error("Error perfil load:", err);
         userState.isAdmin = false;
-      });
+      }
     }
-    localStorage.setItem('user', JSON.stringify(user));
+    // No guardamos user object entero en localStorage, Firebase lo gestiona
   } else {
     userState.logout();
-    localStorage.removeItem('user');
   }
+  
   if (!authReady) {
     authReady = true;
     createApp(App).use(router).mount('#app');
