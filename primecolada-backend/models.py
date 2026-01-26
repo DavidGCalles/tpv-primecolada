@@ -22,7 +22,8 @@ class ClientSchema(Schema):
     
     id = fields.Str(dump_only=True)
     nombre = fields.Str(required=True)
-    telefono = fields.Str(required=False, allow_none=True)  # Make telefono optional since UID is the ID
+    telefono = fields.Str(required=True)
+    firebase_uid = fields.Str(required=False, allow_none=True)
     created_at = fields.DateTime(dump_only=True)
 
 class VentaSchema(Schema):
@@ -30,8 +31,11 @@ class VentaSchema(Schema):
         unknown = EXCLUDE
 
     id = fields.Str(dump_only=True)
-    client_id = fields.Str(required=True)  # Changed from telefono Int to client_id String
+    client_id = fields.Str(dump_only=True) 
+    
+    telefono = fields.Str(required=True) 
     nombre = fields.Str(required=True)
+    
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
 
