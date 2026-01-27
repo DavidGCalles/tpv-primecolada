@@ -42,7 +42,7 @@ apiClient.interceptors.response.use(
 );
 
 export const clientsApi = {
-  login: (data) => apiClient.post('/clients/login', { data }),
+  login: (data) => apiClient.post('/clients/login', data),
 };
 
 export const ventasApi = {

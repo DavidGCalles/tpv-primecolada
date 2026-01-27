@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <div class="card">
-      <h1>TPV PrimeColada</h1>
+      <h1 class="login-header">TPV PrimeColada</h1>
       
       <div v-if="error" class="alert error">{{ error }}</div>
 
@@ -57,50 +57,50 @@ const router = useRouter();
 const email = ref('');
 const password = ref('');
 const error = ref('');
-const isRegistering = ref(false); // Toggle entre Login y Registro
+const isRegistering = ref(false);
 
-// --- HELPERS ---
 const handleSuccess = async (user, destination = null) => {
   console.log("✅ Auth Firebase OK:", user.uid);
   
   try {
-    // 1. LOGIN EN BACKEND (El "Merge" del Shadow User)
-    // Enviamos el teléfono si existe en Firebase, si no, el backend buscará por UID
     let dbId = null;
     let isAdmin = false;
 
     if (!user.isAnonymous) {
-      // Intenta hacer login en backend para reclamar historial
+      // Intentamos login en backend.
+      // Solo enviamos teléfono si Firebase nos lo da garantizado (user.phoneNumber)
+      // Si no, el backend buscará solo por UID.
       try {
         const loginPayload = {
-            telefono: user.phoneNumber || null, // Si Firebase tiene el teléfono, lo usamos
+            telefono: user.phoneNumber || null, 
             nombre: user.displayName || user.email
         };
+        
         const backendResponse = await clientsApi.login(loginPayload);
         
-        // El backend nos devuelve el ID real de Firestore y si es admin
         dbId = backendResponse.data.id;
         isAdmin = backendResponse.data.user?.admin || false;
         
-        // Guardamos persistencia para recargas
         localStorage.setItem('dbId', dbId);
         console.log("🔗 Vinculación Backend OK. DB_ID:", dbId);
 
       } catch (err) {
-        console.warn("⚠️ Backend login falló (posiblemente primer login sin teléfono), fallback a perfil simple:", err);
-        // Fallback: Si falla el login específico de cliente, intentamos obtener perfil básico
-         try {
-            const profile = await userApi.getProfile();
-            isAdmin = profile.data.is_admin;
-         } catch (e) { console.error("Error perfil", e); }
+        // Si el usuario es nuevo Y no tiene teléfono en Google, el backend dará 404.
+        // En ese caso, hacemos fallback a un perfil básico (sin historial shadow).
+        console.warn("⚠️ Backend login falló (Usuario nuevo sin teléfono vinculado):", err);
+        try {
+            // Intentamos obtener perfil si existiera, o continuamos sin dbId
+             const profile = await userApi.getProfile();
+             if (profile.data) isAdmin = profile.data.is_admin;
+        } catch (e) { 
+            console.log("Nuevo usuario detectado sin historial previo.");
+        }
       }
     }
 
-    // 2. ACTUALIZAR ESTADO
     userState.login(user, dbId);
     userState.isAdmin = isAdmin;
 
-    // 3. REDIRECCIÓN
     if (destination) {
       router.push(destination);
     } else if (userState.isAdmin) {
@@ -119,7 +119,6 @@ const handleError = (err) => {
   error.value = err.message || "Error desconocido";
 };
 
-// --- ACTIONS (Sin cambios en la lógica de llamada, solo usan handleSuccess) ---
 const loginGoogle = async () => {
   error.value = '';
   try {
@@ -151,9 +150,9 @@ const loginAnonymous = async () => {
 </script>
 
 <style scoped>
-/* Estilos básicos para que no sangren los ojos */
 .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f2f5; }
 .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+.login-header {color: #4897f7; }
 .form-group { margin-bottom: 1rem; }
 input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
 .btn { width: 100%; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; margin-bottom: 0.5rem; transition: background 0.2s; }
