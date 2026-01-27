@@ -4,6 +4,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from flask_cors import CORS
 import firebase_admin
 import logging
+from flask_jwt_extended import JWTManager
 
 # Import routes and swagger spec
 from routes import api
@@ -18,6 +19,10 @@ from flask import g
 # Initialize Flask App
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+# JWT Configuration
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-secret-key')  # Change this to a secure key
+jwt = JWTManager(app)
 
 if not firebase_admin._apps:
     firebase_admin.initialize_app()

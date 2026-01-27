@@ -1,0 +1,79 @@
+import logging
+from google.cloud import firestore
+from db import db
+
+def get_or_create_client_by_phone(telefono, nombre):
+    """
+    Searches for a client by phone.
+    - If found: Returns the existing Document ID.
+    - If not found: Creates a 'Shadow User' (no firebase_uid) and returns new ID.
+    """
+    if not db:
+        raise Exception("Firestore not initialized")
+
+    clients_collection = db.collection('clients')
+    query = clients_collection.where('telefono', '==', str(telefono)).limit(1)
+    results = list(query.stream())
+
+    if results:
+        doc_id = results[0].id
+        logging.info(f"Existing client found for phone {telefono}: {doc_id}")
+        return doc_id
+    else:
+        new_client_data = {
+            'nombre': nombre,
+            'telefono': str(telefono),
+            'firebase_uid': None,
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        update_time, doc_ref = clients_collection.add(new_client_data)
+        logging.info(f"Shadow User created: {doc_ref.id} for phone {telefono}")
+        return doc_ref.id
+
+def merge_shadow_user(firebase_uid, telefono):
+    """
+    Intenta fusionar un usuario autenticado (firebase_uid) con un perfil sombra existente.
+    
+    Retorna:
+        - (str) ID del documento sombra reclamado (si hubo fusión).
+        - None (si no se encontró sombra o no era necesaria fusión).
+    """
+    if not db or not telefono:
+        return None
+
+    clients_collection = db.collection('clients')
+    
+    # Buscamos si existe un perfil sombra con este teléfono
+    # CRÍTICO: Debe ser un perfil que NO tenga firebase_uid asignado (o sea null)
+    # Pero Firestore query con '== None' puede ser tricky, mejor buscamos por telefono y filtramos en código
+    # para asegurar que no robamos la cuenta a otro usuario registrado.
+    
+    query = clients_collection.where('telefono', '==', str(telefono)).limit(1)
+    results = list(query.stream())
+    
+    if results:
+        shadow_doc = results[0]
+        shadow_data = shadow_doc.to_dict()
+        
+        # VERIFICACIÓN DE SEGURIDAD (MVP):
+        # Solo reclamamos si no tiene UID (es sombra real) 
+        # O si el UID ya es el nuestro (re-claiming idempotente)
+        current_owner = shadow_data.get('firebase_uid')
+        
+        if current_owner is None:
+            # ¡FUSIÓN! El usuario sombra se convierte en usuario real
+            clients_collection.document(shadow_doc.id).update({
+                'firebase_uid': firebase_uid,
+                'updated_at': firestore.SERVER_TIMESTAMP
+            })
+            logging.info(f"MERGE SUCCESS: User {firebase_uid} claimed Shadow {shadow_doc.id}")
+            return shadow_doc.id
+            
+        elif current_owner == firebase_uid:
+             # Ya era nuestro, devolvemos el ID para asegurar que usamos este
+             return shadow_doc.id
+        else:
+            logging.warning(f"CONFLICT: User {firebase_uid} tried to claim phone {telefono} owned by {current_owner}")
+            return None
+            
+    return None

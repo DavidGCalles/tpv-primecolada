@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <div class="card">
-      <h1>TPV PrimeColada</h1>
+      <h1 class="login-header">TPV PrimeColada</h1>
       
       <div v-if="error" class="alert error">{{ error }}</div>
 
@@ -51,61 +51,80 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { userState } from '../stateHelper';
-import { userApi } from '../api';
+import { userApi, clientsApi } from '../api';
 
 const router = useRouter();
 const email = ref('');
 const password = ref('');
 const error = ref('');
-const isRegistering = ref(false); // Toggle entre Login y Registro
+const isRegistering = ref(false);
 
-// --- HELPERS ---
-const handleSuccess = async (user, destination = '/ventas') => {
-  userState.login(user);
-  console.log("✅ Login éxito:", user.uid, "| Modo:", user.isAnonymous ? "Anónimo" : "Autenticado");
+const handleSuccess = async (user, destination = null) => {
+  console.log("✅ Auth Firebase OK:", user.uid);
   
-  if (!user.isAnonymous) {
-    try {
-      const profile = await userApi.getProfile();
-      userState.isAdmin = profile.data.is_admin;
-      console.log("Perfil obtenido:", profile.data);
-    } catch (err) {
-      console.error("Error obteniendo perfil:", err);
-      // Asumir no admin si falla
-      userState.isAdmin = false;
+  try {
+    let dbId = null;
+    let isAdmin = false;
+
+    if (!user.isAnonymous) {
+      // Intentamos login en backend.
+      // Solo enviamos teléfono si Firebase nos lo da garantizado (user.phoneNumber)
+      // Si no, el backend buscará solo por UID.
+      try {
+        const loginPayload = {
+            telefono: user.phoneNumber || null, 
+            nombre: user.displayName || user.email
+        };
+        
+        const backendResponse = await clientsApi.login(loginPayload);
+        
+        dbId = backendResponse.data.id;
+        isAdmin = backendResponse.data.user?.admin || false;
+        
+        localStorage.setItem('dbId', dbId);
+        console.log("🔗 Vinculación Backend OK. DB_ID:", dbId);
+
+      } catch (err) {
+        // Si el usuario es nuevo Y no tiene teléfono en Google, el backend dará 404.
+        // En ese caso, hacemos fallback a un perfil básico (sin historial shadow).
+        console.warn("⚠️ Backend login falló (Usuario nuevo sin teléfono vinculado):", err);
+        try {
+            // Intentamos obtener perfil si existiera, o continuamos sin dbId
+             const profile = await userApi.getProfile();
+             if (profile.data) isAdmin = profile.data.is_admin;
+        } catch (e) { 
+            console.log("Nuevo usuario detectado sin historial previo.");
+        }
+      }
     }
-  }
-  
-  if (userState.isAdmin) {
-    router.push('/admin');
-  } else {
-    router.push(user.isAnonymous ? '/horarios' : '/user');
+
+    userState.login(user, dbId);
+    userState.isAdmin = isAdmin;
+
+    if (destination) {
+      router.push(destination);
+    } else if (userState.isAdmin) {
+      router.push('/admin');
+    } else {
+      router.push(user.isAnonymous ? '/horarios' : '/user');
+    }
+
+  } catch (err) {
+    handleError(err);
   }
 };
 
 const handleError = (err) => {
   console.error("❌ Error Auth:", err);
-  // Traducir errores comunes de Firebase a humano
-  switch (err.code) {
-    case 'auth/invalid-email': error.value = 'El correo no es válido.'; break;
-    case 'auth/user-not-found': error.value = 'Usuario no encontrado.'; break;
-    case 'auth/wrong-password': error.value = 'Contraseña incorrecta.'; break;
-    case 'auth/email-already-in-use': error.value = 'Ese correo ya está registrado.'; break;
-    case 'auth/weak-password': error.value = 'La contraseña es muy débil (min 6 caracteres).'; break;
-    default: error.value = err.message;
-  }
+  error.value = err.message || "Error desconocido";
 };
-
-// --- ACTIONS ---
 
 const loginGoogle = async () => {
   error.value = '';
   try {
     const result = await signInWithPopup(auth, googleProvider);
     handleSuccess(result.user);
-  } catch (err) {
-    handleError(err);
-  }
+  } catch (err) { handleError(err); }
 };
 
 const handleEmailAuth = async () => {
@@ -118,27 +137,22 @@ const handleEmailAuth = async () => {
       result = await signInWithEmailAndPassword(auth, email.value, password.value);
     }
     handleSuccess(result.user);
-  } catch (err) {
-    handleError(err);
-  }
+  } catch (err) { handleError(err); }
 };
 
 const loginAnonymous = async () => {
   error.value = '';
   try {
     const result = await signInAnonymously(auth);
-    // IMPORTANTE: Los anónimos van a la landing de horarios, no a ventas
     handleSuccess(result.user, '/horarios'); 
-  } catch (err) {
-    handleError(err);
-  }
+  } catch (err) { handleError(err); }
 };
 </script>
 
 <style scoped>
-/* Estilos básicos para que no sangren los ojos */
 .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f2f5; }
 .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+.login-header {color: #4897f7; }
 .form-group { margin-bottom: 1rem; }
 input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
 .btn { width: 100%; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; margin-bottom: 0.5rem; transition: background 0.2s; }
