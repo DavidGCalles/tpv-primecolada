@@ -5,7 +5,7 @@ from flask_jwt_extended import create_access_token, get_jwt
 from auth_middleware import token_required
 from models import client_schema
 import logging
-from utils import get_or_create_client_by_phone
+from utils import merge_shadow_user
 
 clients_api = Blueprint('clients_api', __name__)
 
@@ -133,7 +133,7 @@ def delete_client(client_id):
 @token_required
 def client_login():
     """
-    Authenticate a client AND claim their Shadow History.
+    Authenticate a client AND perform Identity Resolution (Merging).
     """
     if not clients_collection:
         return jsonify({"error": "Firestore not initialized"}), 500
@@ -141,44 +141,52 @@ def client_login():
         uid = g.user_id
         data = request.get_json() or {}
         phone_input = data.get('telefono')
-        # Ideally we prefer the phone from the Firebase Token, but input works for MVP
-
-        # 1. Search for ALREADY REGISTERED User (by UID)
-        # Note: 'firebase_uid' is the field we added to the Client Schema
+        
+        # 1. ¿Existe ya un usuario registrado con este UID?
         query_uid = clients_collection.where('firebase_uid', '==', uid).limit(1)
         results_uid = list(query_uid.stream())
-
-        final_doc_id = None
-        client_data = None
-
-        if results_uid:
-            # Case A: User already exists and is claimed.
-            doc = results_uid[0]
-            final_doc_id = doc.id
-            client_data = doc.to_dict()
         
-        elif phone_input:
-            # Case B: First time logging in. Let's see if they have a ghost.
-            # We use the helper to get the ID (it will create a shadow if none exists)
-            final_doc_id = get_or_create_client_by_phone(phone_input, data.get('nombre', 'Usuario Digital'))
-            
-            # NOW WE MERGE: Stamp the Firebase UID onto that document
-            doc_ref = clients_collection.document(final_doc_id)
-            doc_ref.update({
-                'firebase_uid': uid,
-                'updated_at': firestore.SERVER_TIMESTAMP
-            })
-            
-            client_data = doc_ref.get().to_dict()
-            logging.info(f"MERGE: User {uid} claimed Shadow Account {final_doc_id}")
-            
-        else:
-            return jsonify({"error": "User not registered and no phone provided."}), 404
+        existing_doc = results_uid[0] if results_uid else None
+        final_doc_id = existing_doc.id if existing_doc else None
+        client_data = existing_doc.to_dict() if existing_doc else {}
 
-        # Generate Backend Session Token
+        # 2. LOGIC DE MERGE (Si hay teléfono)
+        if phone_input:
+            claimed_shadow_id = merge_shadow_user(uid, phone_input)
+            
+            if claimed_shadow_id:
+                # ¡Éxito! Hemos reclamado una cuenta antigua.
+                final_doc_id = claimed_shadow_id
+                
+                # LIMPIEZA: Si teníamos una cuenta "vacía" (creada antes) y ahora hemos 
+                # reclamado otra (la sombra), la cuenta vacía ya no sirve.
+                # (Solo si son IDs diferentes, claro)
+                if existing_doc and existing_doc.id != claimed_shadow_id:
+                    logging.info(f"CLEANUP: Deleting obsolete empty profile {existing_doc.id}")
+                    clients_collection.document(existing_doc.id).delete()
+                
+                # Refrescamos los datos finales
+                client_data = clients_collection.document(final_doc_id).get().to_dict()
+
+        # 3. SI AÚN NO TENEMOS CUENTA (Ni existente, ni fusionada) -> CREAR NUEVA
+        if not final_doc_id:
+            new_data = {
+                'firebase_uid': uid,
+                'nombre': data.get('nombre', 'Usuario Digital'),
+                'created_at': firestore.SERVER_TIMESTAMP
+            }
+            if phone_input:
+                new_data['telefono'] = str(phone_input)
+                
+            update_time, doc_ref = clients_collection.add(new_data)
+            final_doc_id = doc_ref.id
+            client_data = new_data
+            logging.info(f"NEW USER: Created profile {final_doc_id} for {uid}")
+
+        # Generate Token (Siempre apunta al final_doc_id resuelto)
         is_admin = client_data.get('admin', False)
         access_token = create_access_token(
-            identity=final_doc_id, # IDENTITY IS NOW THE FIRESTORE DOC ID, NOT THE UID
+            identity=final_doc_id, 
             additional_claims={'is_admin': is_admin, 'firebase_uid': uid}
         )
         
