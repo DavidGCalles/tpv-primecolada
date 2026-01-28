@@ -2,10 +2,16 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Ventas from './components/Ventas.vue';
 import Login from './components/Login.vue';
 import UserView from './components/UserView.vue';
+import GuestTracker from './components/GuestTracker.vue';
 import { userState } from './stateHelper';
 
 const routes = [
   {
+    path: '/horarios',
+    name: 'Horarios',
+    component: UserView
+  }
+  ,{
     path: '/admin',
     name: 'Ventas',
     component: Ventas,
@@ -21,6 +27,11 @@ const routes = [
     name: 'UserView',
     component: UserView,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/track/:id',
+    name: 'GuestTracker',
+    component: GuestTracker,
   },
   {
     path: '/',

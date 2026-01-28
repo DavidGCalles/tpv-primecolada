@@ -2,6 +2,7 @@
   <nav>
     <h1 class="title">Prime Colada</h1>
     <router-link to="/admin" v-if="userState.isAdmin">Admin</router-link>
+    <router-link to="/user">Mis Pedidos</router-link>
     <button @click="logout">Logout</button>
   </nav>
 </template>
@@ -9,11 +10,13 @@
 <script setup>
 import { userState } from '../stateHelper';
 import { useRouter } from 'vue-router';
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase';
 
 const router = useRouter();
 
-const logout = () => {
-  userState.logout();
+const logout = async () => {
+  await signOut(auth);
   router.push('/login');
 };
 </script>

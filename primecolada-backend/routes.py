@@ -1,14 +1,15 @@
 import requests
 import os
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from datetime import datetime
 from google.cloud import firestore
 from db import db  # Import the Firestore client from db.py
 from enums import VentaState
-from models import venta_schema, ventas_schema
+from models import venta_schema, ventas_schema, public_venta_schema
 from marshmallow import ValidationError
-from flask_jwt_extended import jwt_required, get_jwt
+from auth_middleware import token_required
 from functools import wraps
+from utils import get_or_create_client_by_phone
 
 # Create a Blueprint for the routes
 api = Blueprint('api', __name__)
@@ -17,8 +18,8 @@ def admin_required():
     def wrapper(fn):
         @wraps(fn)
         def decorator(*args, **kwargs):
-            claims = get_jwt()
-            if claims.get('is_admin'):
+            # CAMBIO: Usamos la variable global g que rellenó el middleware
+            if g.get('is_admin'):
                 return fn(*args, **kwargs)
             else:
                 return jsonify(msg="Admins only!"), 403
@@ -42,42 +43,53 @@ def convert_timestamps(data):
 ventas_collection = db.collection('ventas') if db else None
 clients_collection = db.collection('clients') if db else None
 
+@api.route('/user/profile', methods=['GET'])
+@token_required
+def get_user_profile():
+    """
+    Get the current user's profile information.
+    
+    Returns:
+        JSON: User ID and admin status.
+    """
+    return jsonify({
+        'user_id': g.user_id,
+        'is_admin': g.is_admin
+    })
+
 @api.route('/ventas', methods=['POST'])
-@jwt_required()
-@admin_required()
+@token_required
 def create_venta():
     """
     Create a new venta in Firestore.
-
-    This endpoint expects a JSON payload with 'telefono' and 'nombre' fields.
-    It adds a new document to the 'ventas' collection with a default state
-    of 'IMPRIMIENDO' and a server-side timestamp. If a client with the given
-    'telefono' does not exist, a new client will be created.
-
-    Returns:
-        JSON: A confirmation message with the new document's ID or an error message.
+    ADR-003: Accepts 'telefono' instead of 'client_id'.
     """
-    if not ventas_collection:
+    if not db:
         return jsonify({"error": "Firestore not initialized"}), 500
     try:
         data = request.get_json()
+        
+        # Validate payload (Ensure models.py VentaSchema requires telefono, not client_id)
         try:
             validated_data = venta_schema.load(data)
         except ValidationError as err:
             return jsonify(err.messages), 400
 
-        # Upsert client
-        client_id = str(validated_data['telefono'])
-        client_ref = clients_collection.document(client_id)
-        if not client_ref.get().exists:
-            client_ref.set({
-                'nombre': validated_data['nombre'],
-                'telefono': validated_data['telefono'],
-                'created_at': firestore.SERVER_TIMESTAMP
-            })
+        # --- SHADOW USER RESOLUTION ---
+        # We trust the helper to find the ID or create a ghost user
+        try:
+            client_doc_id = get_or_create_client_by_phone(
+                validated_data['telefono'], 
+                validated_data['nombre']
+            )
+        except Exception as e:
+            return jsonify({"error": f"Resolution failed: {str(e)}"}), 500
+        # ------------------------------
 
-        # Add a new document with an auto-generated ID and default state
+        # Construct the Venta document
         doc_data = validated_data
+        doc_data['client_id'] = client_doc_id  # Link the sale to the resolved ID
+        
         now = datetime.now()
         doc_data['created_at'] = now
         doc_data['updated_at'] = now
@@ -87,19 +99,27 @@ def create_venta():
                 'salida': None
             }
         }
+        
+        # Save to Firestore
+        ventas_collection = db.collection('ventas')
         update_time, doc_ref = ventas_collection.add(doc_data)
-        broadcast_imprimiendo_update()  # broadcast updated list
-        return jsonify({"id": doc_ref.id}), 201
+        
+        return jsonify({
+            "id": doc_ref.id, 
+            "client_id": client_doc_id,
+            "message": "Venta created and linked to Client (Shadow or Registered)"
+        }), 201
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
 @api.route('/ventas', methods=['GET'])
-@jwt_required()
+@token_required
 def get_ventas():
     """
     Get all ventas from Firestore, with optional filtering.
 
-    Retrieves documents from the 'ventas' collection. If a 'telefono'
+    Retrieves documents from the 'ventas' collection. If a 'client_id'
     query parameter is provided, it filters the ventas for that client.
     Otherwise, it returns all ventas.
 
@@ -109,10 +129,10 @@ def get_ventas():
     if not ventas_collection:
         return jsonify({"error": "Firestore not initialized"}), 500
     try:
-        telefono_filter = request.args.get('telefono')
+        client_id_filter = request.args.get('client_id')
         
-        if telefono_filter:
-            query = ventas_collection.where('telefono', '==', int(telefono_filter))
+        if client_id_filter:
+            query = ventas_collection.where('client_id', '==', client_id_filter)
         else:
             query = ventas_collection
 
@@ -127,8 +147,7 @@ def get_ventas():
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/count', methods=['GET'])
-@jwt_required()
-@admin_required()
+@token_required
 def count_ventas_by_status():
     """
     Count ventas by their current status.
@@ -152,8 +171,7 @@ def count_ventas_by_status():
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/stats', methods=['GET'])
-#@jwt_required()
-#@admin_required()
+@token_required
 def get_ventas_stats():
     """
     Get sales statistics for the current day.
@@ -194,7 +212,7 @@ def get_ventas_stats():
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/<string:venta_id>', methods=['GET'])
-@jwt_required()
+@token_required
 def get_venta(venta_id):
     """
     Get a single venta by its ID.
@@ -220,8 +238,7 @@ def get_venta(venta_id):
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/<string:venta_id>', methods=['PUT'])
-@jwt_required()
-@admin_required()
+@token_required
 def update_venta(venta_id):
     """
     Update an existing venta.
@@ -266,7 +283,6 @@ def update_venta(venta_id):
                 validated_data['historial_estados'] = historial
 
             doc_ref.update(validated_data)
-            broadcast_imprimiendo_update()  # broadcast updated list
             return jsonify({"success": True}), 200
         else:
             return jsonify({"error": "Venta not found"}), 404
@@ -274,8 +290,7 @@ def update_venta(venta_id):
         return jsonify({"error": str(e)}), 500
 
 @api.route('/ventas/<string:venta_id>', methods=['DELETE'])
-@jwt_required()
-@admin_required()
+@token_required
 def delete_venta(venta_id):
     """
     Delete a venta from Firestore.
@@ -293,60 +308,34 @@ def delete_venta(venta_id):
         doc = doc_ref.get()
         if doc.exists:
             doc_ref.delete()
-            broadcast_imprimiendo_update()  # broadcast updated list
             return jsonify({"success": True}), 200
         else:
             return jsonify({"error": "Venta not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@api.route('/ventas/imprimiendo', methods=['GET'])
-def get_imprimiendo_ventas():
+@api.route('/public/ventas/<string:venta_id>', methods=['GET'])
+def get_public_venta_traceability(venta_id):
     """
-    Get all ventas from Firestore with the state 'IMPRIMIENDO'.
-
-    Returns:
-        JSON: A list of ventas in the 'IMPRIMIENDO' state or an error message.
+    Returns sanitized status of a sale. No Auth required.
     """
     if not ventas_collection:
         return jsonify({"error": "Firestore not initialized"}), 500
+    
     try:
-        query = ventas_collection.where('estado_actual', '==', VentaState.IMPRIMIENDO.value)
-        results = []
-        for doc in query.stream():
-            venta = doc.to_dict()
-            venta['id'] = doc.id
-            results.append(venta)
-        results = convert_timestamps(results)
-        return jsonify(results), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-def broadcast_imprimiendo_update():
-    """
-    Fetch and broadcast 'imprimiendo' ventas via WebSocket service.
-
-    Queries the 'ventas' collection for documents where the state is 'IMPRIMIENDO'
-    and sends the results to the WebSocket service to be broadcasted to all 
-    connected clients.
-    """
-    if not ventas_collection:
-        return
-    try:
-        query = ventas_collection.where('estado_actual', '==', VentaState.IMPRIMIENDO.value)
-        results = []
-        for doc in query.stream():
-            venta = doc.to_dict()
-            venta['id'] = doc.id
-            results.append(venta)
-        results = convert_timestamps(results)
+        doc_ref = ventas_collection.document(venta_id)
+        doc = doc_ref.get()
         
-        # Send request to WebSocket service
-        websocket_url = os.environ.get('WEBSOCKET_URL', 'http://websockets:3001')
-        try:
-            requests.post(f'{websocket_url}/broadcast', json={"message": results})
-        except requests.exceptions.RequestException as e:
-            print(f"Error sending broadcast request: {e}")
+        if doc.exists:
+            venta = doc.to_dict()
+            venta['id'] = doc.id
+            
+            # APLICAMOS LA MÁSCARA: Solo salen los datos definidos en PublicVentaSchema
+            return jsonify(public_venta_schema.dump(venta)), 200
+        else:
+            # Devolvemos 404 genérico para no filtrar información
+            return jsonify({"error": "Order not found"}), 404
 
     except Exception as e:
-        print(f"Error in broadcast_imprimiendo_update: {e}")
+        print(f"Error public endpoint: {str(e)}") 
+        return jsonify({"error": "Error retrieving status"}), 500

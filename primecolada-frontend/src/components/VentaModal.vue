@@ -40,7 +40,7 @@ const displayedStates = computed(() => {
   if (props.venta) {
     return VentaState;
   }
-  const { ERROR, IMPRIMIENDO, ...filteredStates } = VentaState;
+  const { ERROR, ...filteredStates } = VentaState;
   return filteredStates;
 });
 
@@ -82,6 +82,7 @@ watch(() => [editableVenta.value.coste.lavadora, editableVenta.value.coste.secad
 const save = () => {
   const ventaToSave = {
     ...editableVenta.value,
+    telefono: editableVenta.value.telefono.toString(),
     estado_actual: parseInt(editableVenta.value.estado_actual, 10)
   };
   emit('save', ventaToSave);

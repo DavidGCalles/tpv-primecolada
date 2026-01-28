@@ -43,7 +43,6 @@ import VentaModal from './VentaModal.vue';
 import VentaDetailModal from './VentaDetailModal.vue';
 import StatusSummary from './StatusSummary.vue';
 import VentaCard from './VentaCard.vue';
-// import ImprimiendoWidget from './ImprimiendoWidget.vue';
 import { getVentaStateName, VentaState } from '../stateHelper';
 
 const allVentas = ref([]);
@@ -112,7 +111,7 @@ const openDetailModal = (venta) => {
 
 const generateQrCode = (ventaId) => {
   if (typeof window !== 'undefined') {
-    const url = `${window.location.origin}/venta/${ventaId}`;
+    const url = `${window.location.origin}/track/${ventaId}`;
     qrCodeUrl.value = url;
     showQrModal.value = true;
   }
@@ -137,6 +136,7 @@ const saveVenta = async (venta) => {
     } else {
       // Create
       await ventasApi.create(venta);
+      alert("Pedido creado y enviado a cola");
     }
     showVentaModal.value = false;
     await fetchVentas();

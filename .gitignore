@@ -38,6 +38,11 @@ lerna-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
+/primecolada-backend/.env.backend
+/primecolada-frontend/.env.frontend
+/primecolada-backend/firebase_credentials.json
+/primecolada-frontend/package-lock.json
+
 
 # Docker
 docker-compose.override.yml

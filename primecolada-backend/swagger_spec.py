@@ -23,11 +23,20 @@ def get_swagger_spec():
                     "salida": { "type": "string", "format": "date-time" }
                 }
             },
+            "Client": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string" },
+                    "nombre": { "type": "string" },
+                    "telefono": { "type": "string" },
+                    "created_at": { "type": "string", "format": "date-time" }
+                }
+            },
             "Venta": {
                 "type": "object",
                 "properties": {
                     "id": { "type": "string" },
-                    "telefono": { "type": "integer" },
+                    "client_id": { "type": "string" },
                     "nombre": { "type": "string" },
                     "created_at": { "type": "string", "format": "date-time" },
                     "updated_at": { "type": "string", "format": "date-time" },
@@ -77,11 +86,11 @@ def get_swagger_spec():
                             "description": "Filter by nombre"
                         },
                         {
-                            "name": "telefono",
+                            "name": "client_id",
                             "in": "query",
-                            "type": "number",
+                            "type": "string",
                             "required": False,
-                            "description": "Filter by telefono"
+                            "description": "Filter by client_id"
                         }
                     ],
                     "responses": { "200": { "description": "A list of matching ventas" } }
@@ -97,11 +106,10 @@ def get_swagger_spec():
                                 "type": "object",
                                 "properties": {
                                     "0": { "type": "integer", "description": "Count of ventas with status ERROR" },
-                                    "1": { "type": "integer", "description": "Count of ventas with status IMPRIMIENDO" },
-                                    "2": { "type": "integer", "description": "Count of ventas with status EN_COLA" },
-                                    "3": { "type": "integer", "description": "Count of ventas with status LAVANDO" },
-                                    "4": { "type": "integer", "description": "Count of ventas with status PTE_RECOGIDA" },
-                                    "5": { "type": "integer", "description": "Count of ventas with status RECOGIDO" }
+                                    "1": { "type": "integer", "description": "Count of ventas with status EN_COLA" },
+                                    "2": { "type": "integer", "description": "Count of ventas with status LAVANDO" },
+                                    "3": { "type": "integer", "description": "Count of ventas with status PTE_RECOGIDA" },
+                                    "4": { "type": "integer", "description": "Count of ventas with status RECOGIDO" }
                                 }
                             }
                         }
@@ -168,13 +176,7 @@ def get_swagger_spec():
                         "in": "body",
                         "name": "body",
                         "required": True,
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "telefono": { "type": "number" },
-                                "nombre": { "type": "string" }
-                            }
-                        }
+                        "schema": { "$ref": "#/definitions/Client" }
                     }],
                     "responses": { "201": { "description": "Client created successfully" } }
                 }
@@ -193,13 +195,7 @@ def get_swagger_spec():
                             "in": "body",
                             "name": "body",
                             "required": True,
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "telefono": { "type": "number" },
-                                    "nombre": { "type": "string" }
-                                }
-                            }
+                            "schema": { "$ref": "#/definitions/Client" }
                         }
                     ],
                     "responses": { "200": { "description": "Client updated successfully" }, "404": { "description": "Client not found" } }

@@ -70,7 +70,6 @@ const formatCurrency = (value) => {
 const filteredStatusCounts = computed(() => {
   const counts = { ...props.statusCounts };
   delete counts['ERROR'];
-  delete counts['IMPRIMIENDO'];
   return counts;
 });
 

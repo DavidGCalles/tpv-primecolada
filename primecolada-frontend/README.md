@@ -57,7 +57,6 @@ The production-ready files will be located in the `dist` directory.
 
 -   `axios`: For making HTTP requests to the backend.
 -   `qrcode`: To generate QR codes.
--   `socket.io-client`: For real-time communication with the backend.
 -   `vue`: The core Vue.js library.
 -   `vue-router`: For handling routing within the application.
 
