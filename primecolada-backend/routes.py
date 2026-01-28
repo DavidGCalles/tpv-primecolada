@@ -5,7 +5,7 @@ from datetime import datetime
 from google.cloud import firestore
 from db import db  # Import the Firestore client from db.py
 from enums import VentaState
-from models import venta_schema, ventas_schema, client_schema, clients_schema
+from models import venta_schema, ventas_schema, public_venta_schema
 from marshmallow import ValidationError
 from auth_middleware import token_required
 from functools import wraps
@@ -313,3 +313,29 @@ def delete_venta(venta_id):
             return jsonify({"error": "Venta not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@api.route('/public/ventas/<string:venta_id>', methods=['GET'])
+def get_public_venta_traceability(venta_id):
+    """
+    Returns sanitized status of a sale. No Auth required.
+    """
+    if not ventas_collection:
+        return jsonify({"error": "Firestore not initialized"}), 500
+    
+    try:
+        doc_ref = ventas_collection.document(venta_id)
+        doc = doc_ref.get()
+        
+        if doc.exists:
+            venta = doc.to_dict()
+            venta['id'] = doc.id
+            
+            # APLICAMOS LA MÁSCARA: Solo salen los datos definidos en PublicVentaSchema
+            return jsonify(public_venta_schema.dump(venta)), 200
+        else:
+            # Devolvemos 404 genérico para no filtrar información
+            return jsonify({"error": "Order not found"}), 404
+
+    except Exception as e:
+        print(f"Error public endpoint: {str(e)}") 
+        return jsonify({"error": "Error retrieving status"}), 500
