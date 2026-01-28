@@ -56,6 +56,7 @@ export const ventasApi = {
   delete: (id) => apiClient.delete(`/ventas/${id}`),
   countByStatus: () => apiClient.get('/ventas/count'),
   getStats: () => apiClient.get('/ventas/stats'),
+  getPublicStatus: (id) => apiClient.get(`/public/ventas/${id}`),
 };
 
 export const userApi = {

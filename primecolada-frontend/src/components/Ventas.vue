@@ -111,7 +111,7 @@ const openDetailModal = (venta) => {
 
 const generateQrCode = (ventaId) => {
   if (typeof window !== 'undefined') {
-    const url = `${window.location.origin}/venta/${ventaId}`;
+    const url = `${window.location.origin}/track/${ventaId}`;
     qrCodeUrl.value = url;
     showQrModal.value = true;
   }
