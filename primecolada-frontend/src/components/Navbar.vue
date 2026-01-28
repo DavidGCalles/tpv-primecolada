@@ -2,6 +2,7 @@
   <nav>
     <h1 class="title">Prime Colada</h1>
     <router-link to="/admin" v-if="userState.isAdmin">Admin</router-link>
+    <router-link to="/user">Mis Pedidos</router-link>
     <button @click="logout">Logout</button>
   </nav>
 </template>
