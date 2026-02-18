@@ -198,6 +198,24 @@ def get_ventas_stats():
         # Old pending orders
         query_old = ventas_collection.where('created_at', '<', start_of_day)
         pedidos_antiguos = 0
+        non_terminal_states = [
+            VentaState.EN_COLA.value, 
+            VentaState.LAVANDO.value, 
+            VentaState.PTE_RECOGIDA.value
+        ]
+        
+        for doc in query_old.stream():
+            venta = doc.to_dict()
+            if venta.get('estado_actual') in non_terminal_states:
+                pedidos_antiguos += 1
+
+        return jsonify({
+            "total_precio": total_precio_today,
+            "total_ventas": total_ventas_today,
+            "pedidos_antiguos": pedidos_antiguos
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
         for doc in query_old.stream():
             venta = doc.to_dict()
             if venta.get('estado_actual') not in [VentaState.ENTREGADO.value, VentaState.CANCELADO.value]:
