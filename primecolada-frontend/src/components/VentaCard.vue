@@ -1,6 +1,7 @@
 <template>
   <div class="card">
     <button class="icon-button delete-button" @click="$emit('delete', venta.id)" v-if="showActions">🗑️</button>
+    <button class="icon-button qr-button" @click="$emit('generate-qr', venta.id)" v-if="showActions">📱</button>
     <div class="card-header" @click="$emit('view-details', venta)">
       <h3>{{ venta.nombre }}</h3>
     </div>
@@ -42,7 +43,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['view-details', 'delete', 'update']);
+const emit = defineEmits(['view-details', 'delete', 'update', 'generate-qr']);
 
 const editableVenta = ref(JSON.parse(JSON.stringify(props.venta)));
 
