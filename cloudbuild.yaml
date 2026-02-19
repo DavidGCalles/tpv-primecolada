@@ -1,6 +1,9 @@
 options:
   logging: CLOUD_LOGGING_ONLY
 
+substitutions:
+  _REGION: "europe-west1"
+
 steps:
 # Build and push frontend image
 - name: 'gcr.io/cloud-builders/docker'
@@ -24,7 +27,7 @@ steps:
   - '--image'
   - 'gcr.io/$PROJECT_ID/primecolada-frontend'
   - '--region'
-  - 'europe-west1'
+  - '${_REGION}'
   - '--platform'
   - 'managed'
   - '--set-env-vars'
