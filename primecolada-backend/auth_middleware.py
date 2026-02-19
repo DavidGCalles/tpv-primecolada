@@ -27,10 +27,9 @@ def token_required(f):
             # Esto valida contra tu "colección extra"
             g.is_admin = False
             if db:
-                user_doc = db.collection('clients').document(g.user_id).get()
-                if user_doc.exists:
-                    # Asumimos que el campo se llama 'admin' (booleano)
-                    g.is_admin = user_doc.to_dict().get('admin', False)
+                user_query = db.collection('clients').where('firebase_uid', '==', g.user_id).limit(1).get()
+                if user_query:
+                    g.is_admin = user_query[0].to_dict().get('admin', False)
             # -----------------------------------------------
 
         except Exception as e:

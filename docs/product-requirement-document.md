@@ -30,7 +30,7 @@ The goal of this release is to provide **Sales Management** for the operator and
 | :--- | :--- | :--- | :--- |
 | **FR-1.1** | **Multi-Method Login:** Users must log in via Google or Email/Password. | ✅ Done | Implemented via Firebase Auth. |
 | **FR-1.2** | **Role-Based Access:** System must distinguish between `Admin` (Operator) and `User` (Customer). | ✅ Done | Middleware checks `is_admin` flag in Firestore. |
-| **FR-1.3** | **Guest Routing:** Anonymous/Guest users must be redirected to a useful landing page or public search, not a dead end. | ⚠️ **PENDING** | Currently redirects to an authenticated view (`UserView`) causing errors. Must be fixed to support Guest flow. |
+| **FR-1.3** | **Guest Routing:** Anonymous/Guest users must be redirected to a useful landing page or public search, not a dead end. | ✅ Done | Implemented via the public `/track/:id` route as defined in **ADR-004**. |
 
 ### Epic 2: Core Sales Management (The Ledger)
 **Status:** Implemented
@@ -42,13 +42,13 @@ The goal of this release is to provide **Sales Management** for the operator and
 | **FR-2.3** | **Cost Calculation:** Auto-sum of Washer + Dryer services. | ✅ Done | Computed property in `VentaModal.vue`. |
 
 ### Epic 3: Traceability & Public Access (The "Gap")
-**Status:** Partially Implemented / **CRITICAL FOR v1.0**
+**Status:** Implemented
 
 | ID | Requirement | Status | Implementation Notes |
 | :--- | :--- | :--- | :--- |
-| **FR-3.1** | **QR Generation:** System must generate a QR code for every sale pointing to a unique URL. | ✅ Done | `QrCodeModal.vue` generates QR pointing to `${origin}/venta/${id}`. |
-| **FR-3.2** | **Public Order View:** A publicly accessible URL (`/venta/:id`) that displays the **Status** and **Total Cost** of a specific order. No login required. | 🔴 **MISSING** | **High Priority.** The route `/venta/:id` does not exist in the router. Current scans lead to 404/Home. |
-| **FR-3.3** | **Privacy Masking:** The Public View must NOT show the customer's full phone number or sensitive data. Only First Name and Status. | 🔴 **MISSING** | Requires a new Backend Endpoint (or modification of `GET /ventas/:id`) to allow unauthenticated, limited read access. |
+| **FR-3.1** | **QR Generation:** System must generate a QR code for every sale pointing to a unique URL. | ✅ Done | `QrCodeModal.vue` now generates a QR pointing to the public `/track/:id` route. |
+| **FR-3.2** | **Public Order View:** A publicly accessible URL that displays the **Status** and **Total Cost** of a specific order. No login required. | ✅ Done | The public route `/track/:id` is now active and serves a mobile-friendly view. |
+| **FR-3.3** | **Privacy Masking:** The Public View must NOT show the customer's full phone number or sensitive data. Only First Name and Status. | ✅ Done | A new backend endpoint `GET /public/ventas/:id` serves a sanitized `PublicVentaSchema` with a masked `alias` for the name, as per **ADR-004**. |
 
 ## 4. UI/UX Guidelines
 * **Glassmorphism:** Continue using the existing glassmorphism aesthetic defined in the main CSS.

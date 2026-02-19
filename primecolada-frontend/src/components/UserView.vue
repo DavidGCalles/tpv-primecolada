@@ -129,11 +129,18 @@ export default {
         this.phoneToClaim = '';
         this.ventas = [];
         await this.fetchVentas(); 
-        // fetchVentas cerrará el formulario si encuentra algo
         
       } catch (err) {
         console.error("Error claiming history:", err);
-        this.claimError = "No se pudo encontrar historial para este número.";
+
+        // REFUERZO DE SEGURIDAD:
+        // Si el backend devuelve 409 (Conflict) o 403 (Forbidden),
+        // es la señal de que el número ya está en uso por otra cuenta.
+        if (err.response && (err.response.status === 409 || err.response.status === 403)) {
+          this.claimError = "Este número ya está vinculado a otra cuenta. Contacta con soporte si crees que es un error.";
+        } else {
+          this.claimError = "No se pudo encontrar historial para este número o ocurrió un error.";
+        }
       } finally {
         this.claiming = false;
       }
