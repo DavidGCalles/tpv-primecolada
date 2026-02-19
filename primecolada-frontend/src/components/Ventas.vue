@@ -24,11 +24,12 @@
           @view-details="openDetailModal"
           @update="updateVenta"
           @delete="deleteVenta"
+          @generate-qr="generateQrCode"
         />
       </div>
       
       <VentaModal v-if="showVentaModal" :venta="currentVenta" @close="showVentaModal = false" @save="saveVenta" />
-      <QrCodeModal v-if="showQrModal" :url="qrCodeUrl" @close="showQrModal = false" />
+      <QrCodeModal v-if="showQrModal" :url="qrCodeUrl" :userName="qrUserName" @close="showQrModal = false" />
       <VentaDetailModal v-if="showDetailModal" :venta="currentVenta" @close="showDetailModal = false" />
 
     </div>
@@ -52,6 +53,7 @@ const showVentaModal = ref(false);
 const showQrModal = ref(false);
 const showDetailModal = ref(false);
 const qrCodeUrl = ref('');
+const qrUserName = ref('');
 const selectedStatus = ref(null);
 
 const statusCounts = computed(() => {
@@ -110,9 +112,11 @@ const openDetailModal = (venta) => {
 };
 
 const generateQrCode = (ventaId) => {
-  if (typeof window !== 'undefined') {
+  const venta = allVentas.value.find(v => v.id === ventaId);
+  if (typeof window !== 'undefined' && venta) {
     const url = `${window.location.origin}/track/${ventaId}`;
     qrCodeUrl.value = url;
+    qrUserName.value = venta.nombre; // Assuming 'nombre' is the user name
     showQrModal.value = true;
   }
 };
@@ -135,8 +139,10 @@ const saveVenta = async (venta) => {
       await ventasApi.update(venta.id, venta);
     } else {
       // Create
-      await ventasApi.create(venta);
+      const response = await ventasApi.create(venta);
       alert("Pedido creado y enviado a cola");
+      const newVentaId = response.id; // Assuming the API returns the created venta object directly
+      generateQrCode(newVentaId);
     }
     showVentaModal.value = false;
     await fetchVentas();
