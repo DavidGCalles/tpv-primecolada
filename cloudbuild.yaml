@@ -13,6 +13,7 @@ steps:
   args: ['build', '-t', 'gcr.io/$PROJECT_ID/primecolada-backend', './primecolada-backend']
 - name: 'gcr.io/cloud-builders/docker'
   args: ['push', 'gcr.io/$PROJECT_ID/primecolada-backend']
+  id: 'push-backend-image'
 
 # Deploy frontend service
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -31,18 +32,24 @@ steps:
   - '--allow-unauthenticated'
 
 # Deploy backend service
-- name: 'gcr.io/cloud-builders/gcloud'
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
   args:
-  - 'run'
-  - 'deploy'
-  - 'primecolada-backend'
-  - '--image'
-  - 'gcr.io/$PROJECT_ID/primecolada-backend'
-  - '--region'
-  - 'europe-west1'
-  - '--platform'
-  - 'managed'
-  - '--allow-unauthenticated'
+    - 'run'
+    - 'deploy'
+    - 'primecolada-backend'
+    - '--image=gcr.io/$PROJECT_ID/primecolada-backend:$SHORT_SHA'
+    - '--region=${_REGION}'
+    - '--platform=managed'
+    - '--allow-unauthenticated'
+    - '--set-env-vars'
+    - >-
+        FIRESTORE_DATABASE=primecolada-ventas
+    - '--set-secrets'
+    - >-
+        JWT_SECRET_KEY=JWT_SECRET_KEY:latest
+  id: 'deploy-backend'
+  waitFor: ['push-backend-image']
 
 images:
 - gcr.io/$PROJECT_ID/primecolada-frontend
