@@ -150,22 +150,33 @@ def client_login():
         final_doc_id = existing_doc.id if existing_doc else None
         client_data = existing_doc.to_dict() if existing_doc else {}
 
-        # 2. LOGIC DE MERGE (Si hay teléfono)
+        # 2. LÓGICA DE MERGE (Si hay teléfono)
         if phone_input:
-            claimed_shadow_id = merge_shadow_user(uid, phone_input)
+            merge_result_id = merge_shadow_user(uid, phone_input)
             
-            if claimed_shadow_id:
-                # ¡Éxito! Hemos reclamado una cuenta antigua.
-                final_doc_id = claimed_shadow_id
+            # CASO 1: CONFLICTO DE PROPIEDAD
+            # merge_shadow_user devuelve None si el teléfono ya está reclamado por otro UID.
+            if merge_result_id is None:
+                # Si el usuario ya tenía un perfil, no hacemos nada drástico.
+                # Simplemente ignoramos la reclamación y seguimos con su perfil existente.
+                # Si no tenía perfil, se le creará uno nuevo más abajo, pero sin el teléfono.
+                logging.warning(f"User {uid} failed to claim phone {phone_input}. It may belong to another user.")
                 
-                # LIMPIEZA: Si teníamos una cuenta "vacía" (creada antes) y ahora hemos 
-                # reclamado otra (la sombra), la cuenta vacía ya no sirve.
-                # (Solo si son IDs diferentes, claro)
-                if existing_doc and existing_doc.id != claimed_shadow_id:
-                    logging.info(f"CLEANUP: Deleting obsolete empty profile {existing_doc.id}")
+                # Devolvemos un error específico para que el frontend pueda reaccionar.
+                # 409 Conflict es un buen candidato.
+                if not existing_doc:
+                     return jsonify({"error": "Este número ya está vinculado a otra cuenta."}), 409
+
+            # CASO 2: ÉXITO EN LA RECLAMACIÓN
+            else:
+                final_doc_id = merge_result_id
+                
+                # LIMPIEZA: Si el usuario tenía un perfil "vacío" antes de reclamar, lo borramos.
+                if existing_doc and existing_doc.id != final_doc_id:
+                    logging.info(f"CLEANUP: Deleting obsolete empty profile {existing_doc.id} after successful claim.")
                     clients_collection.document(existing_doc.id).delete()
                 
-                # Refrescamos los datos finales
+                # Refrescamos los datos del perfil reclamado.
                 client_data = clients_collection.document(final_doc_id).get().to_dict()
 
         # 3. SI AÚN NO TENEMOS CUENTA (Ni existente, ni fusionada) -> CREAR NUEVA

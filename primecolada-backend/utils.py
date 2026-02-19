@@ -54,26 +54,27 @@ def merge_shadow_user(firebase_uid, telefono):
     if results:
         shadow_doc = results[0]
         shadow_data = shadow_doc.to_dict()
-        
-        # VERIFICACIÓN DE SEGURIDAD (MVP):
-        # Solo reclamamos si no tiene UID (es sombra real) 
-        # O si el UID ya es el nuestro (re-claiming idempotente)
         current_owner = shadow_data.get('firebase_uid')
-        
-        if current_owner is None:
-            # ¡FUSIÓN! El usuario sombra se convierte en usuario real
+
+        # REGLA ESTRICTA DE SEGURIDAD:
+        # 1. Si el perfil encontrado tiene un `firebase_uid`...
+        # 2. ...Y ese `firebase_uid` NO es el del usuario que hace la petición...
+        # 3. ...Se aborta la operación para evitar robo de identidad.
+        if current_owner and current_owner != firebase_uid:
+            logging.warning(f"SECURITY ALERT: User {firebase_uid} attempted to claim phone number {telefono} already owned by {current_owner}.")
+            return None  # Abortar
+
+        # Si el perfil no tiene dueño (es un "Shadow User"), lo reclamamos.
+        if not current_owner:
             clients_collection.document(shadow_doc.id).update({
                 'firebase_uid': firebase_uid,
                 'updated_at': firestore.SERVER_TIMESTAMP
             })
-            logging.info(f"MERGE SUCCESS: User {firebase_uid} claimed Shadow {shadow_doc.id}")
+            logging.info(f"MERGE SUCCESS: User {firebase_uid} claimed Shadow profile {shadow_doc.id}")
             return shadow_doc.id
-            
-        elif current_owner == firebase_uid:
-             # Ya era nuestro, devolvemos el ID para asegurar que usamos este
-             return shadow_doc.id
-        else:
-            logging.warning(f"CONFLICT: User {firebase_uid} tried to claim phone {telefono} owned by {current_owner}")
-            return None
+        
+        # Si el `firebase_uid` es el nuestro, la operación es idempotente.
+        # Simplemente retornamos el ID correcto.
+        return shadow_doc.id
             
     return None
